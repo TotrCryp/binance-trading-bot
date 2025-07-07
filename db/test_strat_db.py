@@ -23,6 +23,27 @@ class CandlesDAO:
     def get_candles(self):
         cur = self._conn.cursor()
         cur.execute(f"SELECT * FROM {self._candle_table_name}")
+        return cur.fetchall()
+
+    def set_candles(self, dataset):
+        cur = self._conn.cursor()
+        cur.executemany(f"""INSERT INTO {self._candle_table_name} (open_time, 
+                        open_price,
+                        high_price,
+                        low_price,
+                        close_price,
+                        volume,
+                        close_time,
+                        quote_asset_volume,
+                        number_of_trades,
+                        taker_buy_base_asset_volume,
+                        taker_buy_quote_asset_volume,
+                        unused_field) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", dataset)
+        self._conn.commit()
+
+    def get_last_timestamp(self):
+        cur = self._conn.cursor()
+        cur.execute(f"SELECT close_time FROM {self._candle_table_name} ORDER BY close_time DESC LIMIT 1")
         return cur.fetchone()
 
 

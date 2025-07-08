@@ -1,3 +1,6 @@
+import logging
+
+
 class HistoricalData:
     def __init__(self, symbol, interval):
         self._symbol = symbol
@@ -11,4 +14,5 @@ class HistoricalData:
             if dataset:
                 candle_dao.set_candles(dataset)
                 start_time = dataset[-1][6]
+                logging.info(f"Historical data updated, added {len(dataset)} entries to {self._symbol}")
             keep_updating = len(dataset) == 1000

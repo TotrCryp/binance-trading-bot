@@ -1,3 +1,5 @@
+import logging
+
 from config import (DB_TESTING_STRATEGIES,
                     DB_TRADING,
                     START_DATE_COLLECTION_HISTORICAL_DATA,
@@ -39,12 +41,13 @@ if __name__ == '__main__':
     # Ділянка тестування стратегій
     strategist = Strategist()
     strategy_set = strategist.get_strategy_set()
-    for strategy in strategy_set:
+    for i, strategy in enumerate(strategy_set):
         tester = Tester(candle_dao, test_result_dao, symbol,
                         strategy["deposit_division_strategy"],
                         strategy["percentage_min_profit"],
                         strategy["market_indicators_strategy"])
         tester.run_test()
+        logging.info(f"{i+1} of {len(strategy_set)} strategies tested ({round(((i+1)/len(strategy_set))*100, 3)}%)")
 
     # Close the connection on exit
     test_strat_db.close()

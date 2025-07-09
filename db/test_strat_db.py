@@ -64,10 +64,27 @@ class TestResultsDAO:
                 finish_quote_amount REAL,
                 percentage_of_profit REAL,
                 deposit_division_strategy TEXT,
-                percentage_strategy TEXT,
+                percentage_min_profit TEXT,
                 market_indicators_strategy TEXT
             );
         """)
+
+    def set_tests_results(self, record):
+        cur = self._conn.cursor()
+        cur.execute("""INSERT INTO tests_results (symbol, 
+                        start_time,
+                        start_base_amount,
+                        start_quote_amount,
+                        number_transactions,
+                        last_transactions_side,
+                        finish_time,
+                        finish_base_amount,
+                        finish_quote_amount,
+                        percentage_of_profit,
+                        deposit_division_strategy,
+                        percentage_min_profit,
+                        market_indicators_strategy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", record)
+        self._conn.commit()
 
     def get_tests_results(self):
         cur = self._conn.cursor()

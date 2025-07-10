@@ -1,6 +1,4 @@
-import datetime
-
-from services.utils import (BathDivider,
+from services.utils import (DepositDivider,
                             scale_to_range,
                             percentage_difference)
 
@@ -94,7 +92,7 @@ class Tester:
         list_deposit_division_strategy = [i[0] for i in self._deposit_division_strategy]
         list_percentage_strategy = [i[1] for i in self._deposit_division_strategy]
 
-        divider = BathDivider(self._start_base_amount, list_deposit_division_strategy)
+        divider = DepositDivider(self._start_base_amount, list_deposit_division_strategy)
         dataset = self._candle_dao.get_candles()
         cut_index = 24 * 2
 

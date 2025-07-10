@@ -17,7 +17,7 @@ def add_percent(numeric_value, percent_value):
     return price_with_percent
 
 
-class BathDivider:
+class DepositDivider:
     def __init__(self, remnant, batch_list):
         self._remnant = remnant
         self._batch_list = batch_list

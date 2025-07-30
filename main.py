@@ -20,6 +20,34 @@ from testing_strategies.strategy_preparation import Strategist
 from api.market_data import CandlestickData
 
 
+def perform_update_historical_data():
+    res_last_timestamp = candle_dao.get_last_timestamp()
+    if res_last_timestamp is None:
+        last_timestamp = START_DATE_COLLECTION_HISTORICAL_DATA * 1000
+    else:
+        last_timestamp = res_last_timestamp[0]
+    api_candlestick_data = CandlestickData()
+    historical_data = HistoricalData(symbol, interval)
+    historical_data.update_kline_data(last_timestamp, candle_dao, api_candlestick_data)
+
+
+def start_in_test_mode():
+    strategist = Strategist()
+    strategy_set = strategist.get_strategy_set()
+    for i, strategy in enumerate(strategy_set):
+        tester = Tester(candle_dao, test_result_dao, symbol,
+                        strategy["deposit_division_strategy"],
+                        strategy["percentage_min_profit"],
+                        strategy["market_indicators_strategy"])
+        tester.run_test()
+        logging.info(
+            f"{i + 1} of {len(strategy_set)} strategies tested ({round(((i + 1) / len(strategy_set)) * 100, 3)}%)")
+
+
+def start_in_trading_mode():
+    pass
+
+
 if __name__ == '__main__':
 
     setup_logging()
@@ -62,28 +90,15 @@ if __name__ == '__main__':
 
     # Ділянка оновлення історичних даних
     if update_hd:
-        # todo винести це звідси в модуль оновлення історичних даних
-        res_last_timestamp = candle_dao.get_last_timestamp()
-        if res_last_timestamp is None:
-            last_timestamp = START_DATE_COLLECTION_HISTORICAL_DATA * 1000
-        else:
-            last_timestamp = res_last_timestamp[0]
-        api_candlestick_data = CandlestickData()
-        historical_data = HistoricalData(symbol, interval)
-        historical_data.update_kline_data(last_timestamp, candle_dao, api_candlestick_data)
+        perform_update_historical_data()
 
     # Ділянка тестування стратегій
     if mode == "test":
-        # todo винести це звідси в модуль тестування стратегій
-        strategist = Strategist()
-        strategy_set = strategist.get_strategy_set()
-        for i, strategy in enumerate(strategy_set):
-            tester = Tester(candle_dao, test_result_dao, symbol,
-                            strategy["deposit_division_strategy"],
-                            strategy["percentage_min_profit"],
-                            strategy["market_indicators_strategy"])
-            tester.run_test()
-            logging.info(f"{i+1} of {len(strategy_set)} strategies tested ({round(((i+1)/len(strategy_set))*100, 3)}%)")
+        start_in_test_mode()
+
+    # Ділянка торгівлі
+    if mode == "trading":
+        start_in_trading_mode()
 
     # Close the connection on exit
     test_strat_db.close()

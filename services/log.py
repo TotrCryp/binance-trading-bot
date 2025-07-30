@@ -8,7 +8,7 @@ def setup_logging():
     console_handler.setLevel(logging.INFO)
 
     # File logging configuration
-    file_handler = TimedRotatingFileHandler('btb_app.log', when='D', interval=1, backupCount=2)
+    file_handler = TimedRotatingFileHandler('btb_app.log', when='D', interval=10, backupCount=2)
     file_handler.setLevel(logging.INFO)
 
     # Log format

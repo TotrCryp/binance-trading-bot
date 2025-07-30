@@ -1,6 +1,7 @@
 from services.utils import (DepositDivider,
                             scale_to_range,
                             percentage_difference)
+from config import CANDLE_MULTIPLIER
 
 
 class Tester:
@@ -94,7 +95,7 @@ class Tester:
 
         divider = DepositDivider(self._start_base_amount, list_deposit_division_strategy)
         dataset = self._candle_dao.get_candles()
-        cut_index = 24 * 2
+        cut_index = 24 * CANDLE_MULTIPLIER
 
         for i in range(cut_index, len(dataset)):
             current_data = dataset[i]

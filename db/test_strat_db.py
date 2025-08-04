@@ -65,7 +65,8 @@ class TestResultsDAO:
                 percentage_of_profit REAL,
                 deposit_division_strategy TEXT,
                 percentage_min_profit TEXT,
-                market_indicators_strategy TEXT
+                market_indicators_strategy TEXT,
+                candle_multiplier INTEGER
             );
         """)
 
@@ -83,10 +84,14 @@ class TestResultsDAO:
                         percentage_of_profit,
                         deposit_division_strategy,
                         percentage_min_profit,
-                        market_indicators_strategy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", record)
+                        market_indicators_strategy,
+                        candle_multiplier) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", record)
         self._conn.commit()
 
-    def get_tests_results(self):
+    def get_top_results(self, limit=10):
         cur = self._conn.cursor()
-        cur.execute(f"SELECT * FROM tests_results")
-        return cur.fetchone()
+        cur.execute(
+            "SELECT * FROM tests_results ORDER BY percentage_of_profit DESC LIMIT ?",
+            (limit,)
+        )
+        return cur.fetchall()

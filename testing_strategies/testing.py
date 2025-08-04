@@ -1,11 +1,11 @@
 from services.utils import (DepositDivider,
                             scale_to_range,
                             percentage_difference)
-from config import CANDLE_MULTIPLIER
 
 
 class Tester:
-    def __init__(self, candle_dao, test_result_dao, symbol, deposit_division_strategy, percentage_min_profit, market_indicators_strategy):
+    def __init__(self, candle_dao, test_result_dao, symbol, deposit_division_strategy, percentage_min_profit,
+                 market_indicators_strategy, candle_multiplier):
         self._candle_dao = candle_dao
         self._test_result_dao = test_result_dao
         self._symbol = symbol
@@ -20,6 +20,7 @@ class Tester:
         self._deposit_division_strategy = deposit_division_strategy
         self._percentage_min_profit = percentage_min_profit
         self._market_indicators_strategy = market_indicators_strategy
+        self._candle_multiplier = candle_multiplier
         self._transactions = []
         self._average_cost = 0
         self._stage = 0
@@ -34,11 +35,12 @@ class Tester:
         deposit_division_strategy = str(self._deposit_division_strategy)
         percentage_min_profit = str(self._percentage_min_profit)
         market_indicators_strategy = str(self._market_indicators_strategy)
+        candle_multiplier = self._candle_multiplier
 
         record = (self._symbol, self._start_time, self._start_base_amount, self._start_quote_amount,
                   self._number_transactions, self._last_transactions_side, self._finish_time, self._finish_base_amount,
                   self._finish_quote_amount, percentage_of_profit, deposit_division_strategy, percentage_min_profit,
-                  market_indicators_strategy)
+                  market_indicators_strategy, candle_multiplier)
 
         self._test_result_dao.set_tests_results(record)
 
@@ -95,7 +97,7 @@ class Tester:
 
         divider = DepositDivider(self._start_base_amount, list_deposit_division_strategy)
         dataset = self._candle_dao.get_candles()
-        cut_index = 24 * CANDLE_MULTIPLIER
+        cut_index = 24 * self._candle_multiplier
 
         for i in range(cut_index, len(dataset)):
             current_data = dataset[i]
@@ -113,14 +115,16 @@ class Tester:
                         difference = percentage_difference(self._last_price, current_price)
                         if self._last_price > current_price and abs(difference) > threshold_decrease_percentage:
                             current_base_amount = divider.get_batch(self._stage)
-                            self.transaction_result_calculation("buy", current_price, current_base_amount, current_data[0])
+                            self.transaction_result_calculation("buy", current_price,
+                                                                current_base_amount, current_data[0])
                             divider.set_remnant(self._finish_base_amount)
             elif market_conditions == "sell":
                 if self._stage:
                     current_price = self.get_avg_price(current_data)
                     difference = percentage_difference(self._average_cost, current_price)
                     if difference > self._percentage_min_profit:
-                        self.transaction_result_calculation("sell", current_price, self._finish_quote_amount, current_data[0])
+                        self.transaction_result_calculation("sell", current_price,
+                                                            self._finish_quote_amount, current_data[0])
                         divider.set_remnant(self._finish_base_amount)
 
         current_price = self.get_avg_price(dataset[-1])

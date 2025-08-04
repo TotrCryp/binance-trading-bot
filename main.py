@@ -1,5 +1,6 @@
 import logging
 import argparse
+import os
 
 from config import (DB_TESTING_STRATEGIES,
                     DB_TRADING,
@@ -10,6 +11,7 @@ from config import (DB_TESTING_STRATEGIES,
                     )
 
 from services.log import setup_logging
+from services.messenger_notifications import Notifier
 
 from db.sqlite_db import DbManager
 from db.test_strat_db import CandlesDAO, TestResultsDAO
@@ -18,9 +20,10 @@ from testing_strategies.data_preparation import HistoricalData
 from testing_strategies.testing import Tester
 from testing_strategies.strategy_preparation import Strategist
 from api.market_data import CandlestickData
+from api.telegram import TelegramAPI
 
 
-def perform_update_historical_data():
+def perform_update_historical_data(symbol, interval):
     res_last_timestamp = candle_dao.get_last_timestamp()
     if res_last_timestamp is None:
         last_timestamp = START_DATE_COLLECTION_HISTORICAL_DATA * 1000
@@ -31,7 +34,7 @@ def perform_update_historical_data():
     historical_data.update_kline_data(last_timestamp, candle_dao, api_candlestick_data)
 
 
-def start_in_test_mode():
+def start_in_test_mode(symbol):
     strategist = Strategist()
     strategy_set = strategist.get_strategy_set()
     for i, strategy in enumerate(strategy_set):
@@ -48,10 +51,7 @@ def start_in_trading_mode():
     pass
 
 
-if __name__ == '__main__':
-
-    setup_logging()
-
+def process_startup_arguments():
     parser = argparse.ArgumentParser(description="Coming soon...")
     parser.add_argument("-S", "--symbol",
                         required=True,
@@ -72,32 +72,43 @@ if __name__ == '__main__':
                         action="store_true",
                         help="Update the historical data before testing strategies")
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    symbol = args.symbol
-    interval = args.timeframe
-    mode = args.mode
-    update_hd = args.update_historical_data
-    sandbox = args.sandbox
 
+if __name__ == '__main__':
+
+    setup_logging()
+
+    args = process_startup_arguments()
+
+    # Create Telegram class for Notifier
+    telegram_token = os.getenv("TELEGRAM_TOKEN")
+    telegram_owner_chat_id = os.getenv("TELEGRAM_OWNER_CHAT_ID")
+    telegram = TelegramAPI(telegram_token, telegram_owner_chat_id)
+
+    # Create Notifier class for sending messages
+    notifier = Notifier(telegram)
+    notifier.notify("Hello from Notifier")
+
+    # Databases
     test_strat_db = DbManager(DB_TESTING_STRATEGIES)
     trading_db = DbManager(DB_TRADING)
 
     # Create DAO
     test_strat_db_connection = test_strat_db.get_connection()
-    candle_dao = CandlesDAO(test_strat_db_connection, f"{symbol.lower()}_{interval}")
+    candle_dao = CandlesDAO(test_strat_db_connection, f"{args.symbol.lower()}_{args.timeframe}")
     test_result_dao = TestResultsDAO(test_strat_db_connection)
 
     # Ділянка оновлення історичних даних
-    if update_hd:
-        perform_update_historical_data()
+    if args.update_historical_data:
+        perform_update_historical_data(args.symbol, args.timeframe)
 
     # Ділянка тестування стратегій
-    if mode == "test":
-        start_in_test_mode()
+    if args.mode == "test":
+        start_in_test_mode(args.symbol)
 
     # Ділянка торгівлі
-    if mode == "trading":
+    if args.mode == "trading":
         start_in_trading_mode()
 
     # Close the connection on exit

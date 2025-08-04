@@ -16,4 +16,9 @@ class TelegramAPI:
         }
         response = requests.post(url, data=payload)
         if not response.ok:
-            logging.warning(f"Problem sending telegram message: {response.text}")
+            logging.warning(
+                f"Telegram message failed. Status code: {response.status_code}, "
+                f"Text: {response.text}, URL: {url}, Payload: {payload}"
+            )
+        else:
+            logging.info(f"Telegram message has been sent. Status code: {response.status_code}")

@@ -36,9 +36,11 @@ class Strategist:
         while percentage_min_profit <= self._max_profit:
             for dds in list_deposit_division_strategies:
                 for mis in list_market_indicators_strategy:
-                    strategy_set.append({"deposit_division_strategy": dds,
-                                         "percentage_min_profit": percentage_min_profit,
-                                         "market_indicators_strategy": mis})
+                    for cm in range(1, 15):
+                        strategy_set.append({"deposit_division_strategy": dds,
+                                             "percentage_min_profit": percentage_min_profit,
+                                             "market_indicators_strategy": mis,
+                                             "candle_multiplier": cm})
             percentage_min_profit += self._max_profit_step
 
         return strategy_set

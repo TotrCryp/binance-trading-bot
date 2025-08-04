@@ -41,7 +41,8 @@ def start_in_test_mode(symbol):
         tester = Tester(candle_dao, test_result_dao, symbol,
                         strategy["deposit_division_strategy"],
                         strategy["percentage_min_profit"],
-                        strategy["market_indicators_strategy"])
+                        strategy["market_indicators_strategy"],
+                        strategy["candle_multiplier"])
         tester.run_test()
         logging.info(
             f"{i + 1} of {len(strategy_set)} strategies tested ({round(((i + 1) / len(strategy_set)) * 100, 3)}%)")
@@ -88,7 +89,6 @@ if __name__ == '__main__':
 
     # Create Notifier class for sending messages
     notifier = Notifier(telegram)
-    notifier.notify("Hello from Notifier")
 
     # Databases
     test_strat_db = DbManager(DB_TESTING_STRATEGIES)
@@ -106,6 +106,8 @@ if __name__ == '__main__':
     # Ділянка тестування стратегій
     if args.mode == "test":
         start_in_test_mode(args.symbol)
+        top_results = test_result_dao.get_top_results()
+        notifier.send_strategy_testing_results(top_results)
 
     # Ділянка торгівлі
     if args.mode == "trading":

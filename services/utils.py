@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 def scale_to_range(value, min_val, max_val, new_min=-10, new_max=10):
     if max_val == min_val:
         return 0
@@ -15,6 +18,10 @@ def add_percent(numeric_value, percent_value):
     percent = numeric_value * percent_value / 100
     price_with_percent = numeric_value + percent
     return price_with_percent
+
+
+def get_utc_from_timestamp(unix_time):
+    return datetime.utcfromtimestamp(unix_time)
 
 
 class DepositDivider:

@@ -15,7 +15,7 @@ from services.messenger_notifications import Notifier
 
 from db.sqlite_db import DbManager
 from db.test_strat_db import CandlesDAO, TestResultsDAO
-# from db.trading_db import ...DAO
+from db.trading_db import TradingLogDAO
 from testing_strategies.data_preparation import HistoricalData
 from testing_strategies.testing import Tester
 from testing_strategies.strategy_preparation import Strategist

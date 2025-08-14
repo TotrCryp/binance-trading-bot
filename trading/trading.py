@@ -1,1 +1,23 @@
-pass
+class Symbol:
+    def __init__(self, symbol):
+        self._symbol = symbol
+        self._status = ""
+        self._baseAsset = ""
+        self._baseAssetPrecision = 0
+        self._quoteAsset = ""
+        self._quoteAssetPrecision = 0
+        self._baseCommissionPrecision = 0
+        self._quoteCommissionPrecision = 0
+        self._orderTypes = []
+        self._icebergAllowed = False
+        self._ocoAllowed = False
+        self._otoAllowed = False
+        self._quoteOrderQtyMarketAllowed = False
+        self._allowTrailingStop = False
+        self._cancelReplaceAllowed = False
+        self._amendAllowed = False
+        self._pegInstructionsAllowed = False
+        self._isSpotTradingAllowed = False
+        self._isMarginTradingAllowed = False
+        self._permissions = [],
+        self._permissionSets = []

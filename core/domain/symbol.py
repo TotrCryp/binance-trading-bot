@@ -14,6 +14,7 @@ class Symbol:
     quote_commission_precision: int
     order_types: List[str]
     permission_sets: List[List[str]]
+    filters: List[dict]
 
     def is_order_type_allowed(self, order_type: str) -> bool:
         return order_type.upper() in (t.upper() for t in self.order_types)

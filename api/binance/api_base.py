@@ -34,3 +34,8 @@ class BaseAPI:
 
     def _get_headers(self) -> dict:
         return {"X-MBX-APIKEY": self.api_key}
+
+    @staticmethod
+    def prepare_params(params: dict) -> dict:
+        params = {k: ("true" if v else "false") if isinstance(v, bool) else v for k, v in params.items()}
+        return params

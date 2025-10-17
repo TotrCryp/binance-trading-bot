@@ -44,6 +44,11 @@ class SymbolAdapter:
 
         symbol_data = data["symbols"][0]
 
+        filters = [
+            item
+            for item in symbol_data["filters"]
+        ]
+
         symbol = Symbol(
             symbol=symbol_data["symbol"],
             status=symbol_data["status"],
@@ -54,7 +59,8 @@ class SymbolAdapter:
             base_commission_precision=symbol_data["baseCommissionPrecision"],
             quote_commission_precision=symbol_data["quoteCommissionPrecision"],
             order_types=symbol_data["orderTypes"],
-            permission_sets=symbol_data["permissionSets"]
+            permission_sets=symbol_data["permissionSets"],
+            filters=filters
         )
 
         return symbol

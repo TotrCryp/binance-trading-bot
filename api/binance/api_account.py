@@ -8,10 +8,12 @@ logger = logging.getLogger(__name__)
 class BinanceAccountAPI(BaseAPI):
 
     def get_account_info(self) -> dict:
-        params = {"timestamp": self._get_server_timestamp()}
+        params = {
+            "timestamp": self._get_server_timestamp(),
+            "omitZeroBalances": True
+        }
+        params = self.prepare_params(params)
         signed_params = self._sign_params(params)
-        # signed_params["omitZeroBalances"] = True
-        # todo omitZeroBalances, sign to headers
         headers = self._get_headers()
         url = f"{self.BASE_URL}/account"
 

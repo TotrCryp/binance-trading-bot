@@ -3,16 +3,41 @@ from models import db_helper
 from core.logger import get_logger
 from core.domain.strategy import Strategy
 from core.domain.session import TradingSession
-from repositories import StrategyRepository, SessionRepository
+from core.domain.order import Order
+from repositories import StrategyRepository, SessionRepository, OrderRepository
 from services.binance.account_service import AccountService
 from services.binance.symbol_service import SymbolService
 
 logger = get_logger(__name__)
 
 
-def trading_cycle():
+def temp_test_order():
+    order = Order(trading_session_id=1)
+    with db_helper.get_session() as db_session:
+        repo = OrderRepository(db_session)
+        order = repo.save(order)
+
+
+def continue_trading_session(account):
+    if not account.can_trade:
+        raise RuntimeError("Logic violation: account cant trade")
+
+
+def trading_cycle(account):
+    a = 1
+
+    """
+    перевіряємо чи можна продовжувати
+    перевіряємо чи є оновлена стратегія
+    """
+
     while True:
+        if not continue_trading_session(account):
+            continue
+
         pass
+
+        # tick
 
         # trading_session.last_action = "buy"
         # with db_helper.get_session() as db_session:
@@ -23,6 +48,7 @@ def trading_cycle():
 def run_trading():
 
     # orders
+    temp_test_order()
 
     service = SymbolService()
     symbol = service.get_exchange_info(SYMBOL)
@@ -53,10 +79,7 @@ def run_trading():
     quote_balance = next((b for b in account.balances if b.asset == symbol.quote_asset), None)
     if quote_balance is None:
         raise ValueError("Quote balance is None")
+    base_amount = base_balance.free
+    quote_amount = quote_balance.free
 
-    # base_balance.free
-
-    if not account.can_trade:
-        raise RuntimeError("Logic violation: account cant trade")
-
-    trading_cycle()
+    trading_cycle(account)

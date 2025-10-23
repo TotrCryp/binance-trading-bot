@@ -1,32 +1,26 @@
 from core.config import STRAT_FILE_PATH
 from core.logger import get_logger
 import json
-from pydantic import BaseModel, Field, ValidationError, field_validator
 from typing import List
 
 
 logger = get_logger(__name__)
 
 
-class DepositPart(BaseModel):
-    stage: int = Field()
-    percentage_of_deposit: int = Field(ge=1, le=100)
-    price_change: float = Field()
+class DepositPart:
+    stage: int
+    percentage_of_deposit: int
+    price_change: float
 
 
-class TradingStrategySchema(BaseModel):
+class TradingStrategy:
+    symbol: str
     updated_at: int
     deposit_division_strategy: List[DepositPart]
     percentage_min_profit: float
     market_indicator_to_buy: int
     market_indicator_to_sell: int
-    candle_multiplier: int = Field(ge=1)
-
-    @field_validator("deposit_division_strategy")
-    def check_not_empty(cls, val):
-        if not val:
-            raise ValueError("deposit_division_strategy cannot be empty")
-        return val
+    candle_multiplier: int
 
 
 class Strategy:

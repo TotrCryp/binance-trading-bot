@@ -39,12 +39,12 @@ class OrderSchema(BaseModel):
 
 
 class Fill:
-    def __init__(self, price, qty, commission, commissionAsset, tradeId):
+    def __init__(self, price, qty, commission, commissionAsset):
         self.price: float = price
         self.qty: float = qty
         self.commission: float = commission
         self.commissionAsset: str = commissionAsset
-        self.tradeId: int = tradeId
+        # self.tradeId: int = tradeId
 
 
 class Order:
@@ -67,3 +67,7 @@ class Order:
         self.selfTradePreventionMode = None
 
         self.fills: List[Fill] = []
+
+        one_fill = Fill(price=68000.5, qty=0.1, commission=0.7, commissionAsset="BTC")
+        self.fills.append(one_fill)
+

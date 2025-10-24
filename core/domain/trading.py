@@ -1,9 +1,8 @@
-from core.config import SYMBOL
 from core.logger import get_logger
-from core.domain.strategy import Strategy
-from core.domain.session import TradingSession
-from core.domain.order import Order
-from db import trading_session
+from core.domain.strategy import TradingStrategy
+# from core.domain.session import TradingSession
+# from core.domain.order import Order
+# from db import trading_session
 from api.telegram.sender import Sender
 
 
@@ -40,7 +39,7 @@ def trading_cycle(account):
 
 
 def run_trading():
-    pass
+    tsss = TradingStrategy()
 
     # orders
     # temp_test_order()

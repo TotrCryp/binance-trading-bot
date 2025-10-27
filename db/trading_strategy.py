@@ -27,11 +27,16 @@ def get(strategy_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM trading_strategy WHERE id = ?", (strategy_id,))
-        strategy = cursor.fetchone()
-        if not strategy:
+        strategy_row = cursor.fetchone()
+        if not strategy_row:
             return None
 
-        cursor.execute("SELECT stage, percentage_of_deposit, price_change FROM deposit_part WHERE strategy_id = ?",
-                       (strategy_id,))
-        deposit_parts_rows = cursor.fetchall()
-        return strategy, deposit_parts_rows
+        strategy_dict = dict(strategy_row)
+
+        cursor.execute(
+            "SELECT stage, percentage_of_deposit, price_change FROM deposit_part WHERE strategy_id = ?",
+            (strategy_id,)
+        )
+        deposit_parts = [dict(row) for row in cursor.fetchall()]
+
+        return strategy_dict, deposit_parts

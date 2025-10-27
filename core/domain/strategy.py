@@ -35,19 +35,23 @@ class DepositPart:
 
 
 class TradingStrategy:
-    def __init__(self):
-        self.strategy_id: int = 0
-        self.symbol: str
+    def __init__(self, strategy_id=0):
+        self.strategy_id: int = strategy_id
+        self.symbol: str = ''
         self.updated_at: int = 0
         self.deposit_division_strategy: List[DepositPart] = []
-        self.percentage_min_profit: float
-        self.market_indicator_to_buy: int
-        self.market_indicator_to_sell: int
-        self.candle_multiplier: int
-        self.update_strategy(init_update=True)
+        self.percentage_min_profit: float = 0
+        self.market_indicator_to_buy: int = 0
+        self.market_indicator_to_sell: int = 0
+        self.candle_multiplier: int = 0
+        if self.strategy_id > 0:
+            self.get()
+        else:
+            self.update_strategy(init_update=True)
 
     def update_strategy(self, init_update=False):
         return self.update_strategy_from_json(init_update)
+        #  у майбутньому будемо брати дані з іншого додатку, а не з json, тому тут окремий виклик
 
     def update_strategy_from_json(self, init_update=False):
         file_path = STRAT_FILE_PATH
@@ -95,18 +99,19 @@ class TradingStrategy:
         self.strategy_id = strategy_id
 
     def get(self):
-        d = get(self.strategy_id)
+        data = get(self.strategy_id)
+        if data is None:
+            ts.send_message(f"Trading strategy with id {self.strategy_id} not found")
+            raise LookupError(f"Trading strategy with id {self.strategy_id} not found")
 
-        #  потрібно визначити коли ми беремо атрибути ззовні, а коли з БД
+        strategy_dict, deposit_parts = data
+        self.load_from_dict(strategy_dict, deposit_parts)
 
-        # deposit_parts = [DepositPart(stage, pct, price) for stage, pct, price in deposit_parts_rows]
-        #
-        # return TradingStrategy(
-        #     symbol=row[1],
-        #     updated_at=row[2],
-        #     deposit_division_strategy=deposit_parts,
-        #     percentage_min_profit=row[3],
-        #     market_indicator_to_buy=row[4],
-        #     market_indicator_to_sell=row[5],
-        #     candle_multiplier=row[6]
-        # )
+    def load_from_dict(self, strategy_dict, deposit_parts_list):
+        for key, value in strategy_dict.items():
+            if key != "deposit_division_strategy":
+                setattr(self, key, value)
+
+        self.deposit_division_strategy = [
+            DepositPart(**part) for part in deposit_parts_list
+        ]

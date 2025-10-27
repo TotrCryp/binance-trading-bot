@@ -39,7 +39,8 @@ def trading_cycle(account):
 
 
 def run_trading():
-    tsss = TradingStrategy()
+    tsss = TradingStrategy(strategy_id=1)
+    a = 1
 
     # orders
     # temp_test_order()

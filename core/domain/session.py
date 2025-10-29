@@ -1,4 +1,3 @@
-from core.domain.strategy import Strategy
 
 
 class TradingSession:
@@ -7,12 +6,95 @@ class TradingSession:
                  start_quote_amount,
                  stage,
                  average_cost_acquired_assets,
-                 last_action, strategy):
-        self.id: int | None = None
+                 last_action, strategy_id):
+        self.session_id: int | None = None
         self.symbol: str = symbol
         self.start_base_amount: float = start_base_amount
         self.start_quote_amount: float = start_quote_amount
         self.stage: int = stage
         self.average_cost_acquired_assets: float = average_cost_acquired_assets
         self.last_action: str = last_action
-        self.strategy: Strategy = strategy
+        self.strategy_id: int = strategy_id
+
+
+# class TradingStrategy:
+#     def __init__(self, strategy_id=0):
+#         self.strategy_id: int = strategy_id
+#         self.symbol: str = ''
+#         self.updated_at: int = 0
+#         self.deposit_division_strategy: List[DepositPart] = []
+#         self.percentage_min_profit: float = 0
+#         self.market_indicator_to_buy: int = 0
+#         self.market_indicator_to_sell: int = 0
+#         self.candle_multiplier: int = 0
+#         if self.strategy_id > 0:
+#             self.get()
+#         else:
+#             self.update_strategy(init_update=True)
+#
+#     def update_strategy(self, init_update=False):
+#         return self.update_strategy_from_json(init_update)
+#         #  у майбутньому будемо брати дані з іншого додатку, а не з json, тому тут окремий виклик
+#
+#     def update_strategy_from_json(self, init_update=False):
+#         file_path = STRAT_FILE_PATH
+#         try:
+#             with file_path.open("r", encoding="utf-8") as f:
+#                 data = json.load(f)
+#         except FileNotFoundError:
+#             if init_update:
+#                 sender.send_message(f"Strategy JSON not found: {file_path}")
+#                 raise
+#             return False
+#
+#         try:
+#             validated_strategy = TradingStrategySchema(**data)
+#         except ValidationError as e:
+#             if init_update:
+#                 # якщо це початкове завантаження — падаємо з помилкою
+#                 sender.send_message(f"Invalid strategy JSON:\n{e}")
+#                 raise ValueError(f"Invalid strategy JSON:\n{e}")
+#             else:
+#                 # якщо це не перше завантаження — просто логуємо й пропускаємо оновлення
+#                 logger.warning("Strategy validation failed, update skipped", exc_info=e)
+#                 return False
+#
+#         if validated_strategy.updated_at <= self.updated_at:
+#             return False
+#
+#         for key, value in validated_strategy.model_dump().items():
+#             setattr(self, key, value)
+#
+#         for key, value in validated_strategy.model_dump().items():
+#             if key != "deposit_division_strategy":
+#                 setattr(self, key, value)
+#         self.deposit_division_strategy = [
+#             DepositPart(**part.model_dump()) for part in validated_strategy.deposit_division_strategy
+#         ]
+#
+#         logger.info("Strategy has been updated")
+#         self.save()
+#         logger.info("Strategy has been saved")
+#         return True
+#
+#     def save(self):
+#         strategy_id = save(self)
+#         self.strategy_id = strategy_id
+#
+#     def get(self):
+#         data = get(self.strategy_id)
+#         if data is None:
+#             sender.send_message(f"Trading strategy with id {self.strategy_id} not found")
+#             raise LookupError(f"Trading strategy with id {self.strategy_id} not found")
+#
+#         strategy_dict, deposit_parts = data
+#         self.load_from_dict(strategy_dict, deposit_parts)
+#
+#     def load_from_dict(self, strategy_dict, deposit_parts_list):
+#         for key, value in strategy_dict.items():
+#             if key != "deposit_division_strategy":
+#                 setattr(self, key, value)
+#
+#         self.deposit_division_strategy = [
+#             DepositPart(**part) for part in deposit_parts_list
+#         ]

@@ -1,18 +1,18 @@
 from core.logger import get_logger
+from core.sender import Sender
 from core.domain.strategy import TradingStrategy
 # from core.domain.session import TradingSession
 # from core.domain.order import Order
 # from db import trading_session
-from api.telegram.sender import Sender
 
 
 logger = get_logger(__name__)
-ts = Sender()
+sender = Sender()
 
 
 def continue_trading_session(account):
     if not account.can_trade:
-        ts.send_message("Logic violation: account cant trade")
+        sender.send_message("Logic violation: account cant trade")
         raise RuntimeError("Logic violation: account cant trade")
 
 
@@ -38,7 +38,7 @@ def trading_cycle(account):
         #     trading_session = repo.save(trading_session)
 
 
-def run_trading():
+def run_trading(restore=True):
     tsss = TradingStrategy(strategy_id=1)
     a = 1
 

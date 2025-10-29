@@ -5,4 +5,4 @@ class Sender:
     def send_message(self, message, user_id=-1):
         if user_id < 0:
             user_id = self.admin_id
-        print(f"{message} sent to {user_id}")
+        print(f"Message: '{message}' sent to user {user_id}")

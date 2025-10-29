@@ -1,14 +1,14 @@
 from core.config import STRAT_FILE_PATH
 from core.logger import get_logger
+from core.sender import Sender
 from db.trading_strategy import save, get
 import json
 from typing import List
 from pydantic import BaseModel, ValidationError
-from api.telegram.sender import Sender
 
 
 logger = get_logger(__name__)
-ts = Sender()
+sender = Sender()
 
 
 class DepositPartSchema(BaseModel):
@@ -60,7 +60,7 @@ class TradingStrategy:
                 data = json.load(f)
         except FileNotFoundError:
             if init_update:
-                ts.send_message(f"Strategy JSON not found: {file_path}")
+                sender.send_message(f"Strategy JSON not found: {file_path}")
                 raise
             return False
 
@@ -69,7 +69,7 @@ class TradingStrategy:
         except ValidationError as e:
             if init_update:
                 # якщо це початкове завантаження — падаємо з помилкою
-                ts.send_message(f"Invalid strategy JSON:\n{e}")
+                sender.send_message(f"Invalid strategy JSON:\n{e}")
                 raise ValueError(f"Invalid strategy JSON:\n{e}")
             else:
                 # якщо це не перше завантаження — просто логуємо й пропускаємо оновлення
@@ -101,7 +101,7 @@ class TradingStrategy:
     def get(self):
         data = get(self.strategy_id)
         if data is None:
-            ts.send_message(f"Trading strategy with id {self.strategy_id} not found")
+            sender.send_message(f"Trading strategy with id {self.strategy_id} not found")
             raise LookupError(f"Trading strategy with id {self.strategy_id} not found")
 
         strategy_dict, deposit_parts = data

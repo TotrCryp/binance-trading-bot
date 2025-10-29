@@ -1,7 +1,7 @@
 from core.logger import get_logger
 from core.sender import Sender
 from core.domain.strategy import TradingStrategy
-# from core.domain.session import TradingSession
+from core.domain.symbol import Symbol
 # from core.domain.order import Order
 # from db import trading_session
 
@@ -39,8 +39,11 @@ def trading_cycle(account):
 
 
 def run_trading(restore=True):
-    tsss = TradingStrategy(strategy_id=1)
-    a = 1
+    trading_strategy = TradingStrategy(strategy_id=1)
+    symbol = Symbol(trading_strategy.symbol)
+    symbol.fill_data()
+
+    d = 1
 
     # orders
     # temp_test_order()

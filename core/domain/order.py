@@ -1,41 +1,7 @@
-from pydantic import BaseModel, Field, ValidationError, field_validator
-from typing import List, Optional
+from typing import List
 from core.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-class FillSchema(BaseModel):
-    price: float
-    qty: float
-    commission: float
-    commissionAsset: str
-    tradeId: int
-
-
-class OrderSchema(BaseModel):
-    trading_session_id: int
-    symbol: str
-    api_orderId: int
-    clientOrderId: str
-    transactTime: int
-    price: float
-    origQty: float
-    executedQty: float
-    origQuoteOrderQty: float
-    cummulativeQuoteQty: float
-    status: str
-    timeInForce: str
-    type: str
-    side: str
-    workingTime: int
-    selfTradePreventionMode: Optional[str]
-    fills: List[FillSchema] = []
-
-    @field_validator("fills")
-    def check_fills_not_empty(cls, v):
-        # в майбутьньому можна перевіряти, що список не порожній
-        return v
 
 
 class Fill:
@@ -44,7 +10,7 @@ class Fill:
         self.qty: float = qty
         self.commission: float = commission
         self.commissionAsset: str = commissionAsset
-        # self.tradeId: int = tradeId
+        self.tradeId: int = tradeId
 
 
 class Order:

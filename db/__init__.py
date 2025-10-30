@@ -42,7 +42,7 @@ with get_db() as conn:
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS orders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER PRIMARY KEY,
         symbol TEXT NOT NULL,
         order_list_id INTEGER NOT NULL,
         client_order_id TEXT,
@@ -56,7 +56,8 @@ with get_db() as conn:
         time_in_force TEXT,
         type TEXT,
         side TEXT,
-        working_time INTEGER
+        working_time INTEGER,
+        session_id INTEGER
     )
     """)
 
@@ -69,7 +70,7 @@ with get_db() as conn:
         commission REAL,
         commission_asset TEXT,
         trade_id INTEGER,
-        FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
+        FOREIGN KEY(order_id) REFERENCES orders(order_id) ON DELETE CASCADE
     )
     """)
 

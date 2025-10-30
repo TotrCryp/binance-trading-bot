@@ -26,4 +26,18 @@ with get_db() as conn:
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS trading_session (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        start_base_amount REAL NOT NULL,
+        start_quote_amount REAL NOT NULL,
+        stage INTEGER NOT NULL,
+        average_cost_acquired_assets REAL NOT NULL,
+        last_action TEXT NOT NULL, 
+        strategy_id INTEGER NOT NULL,
+        FOREIGN KEY(strategy_id) REFERENCES trading_strategy(id)
+    )
+    """)
+
     conn.commit()

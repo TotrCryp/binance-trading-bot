@@ -1,100 +1,38 @@
+from core.sender import Sender
+from core.logger import get_logger
+from db.trading_session import save, get
+
+sender = Sender()
+logger = get_logger(__name__)
 
 
 class TradingSession:
-    def __init__(self, symbol,
-                 start_base_amount,
-                 start_quote_amount,
-                 stage,
-                 average_cost_acquired_assets,
-                 last_action, strategy_id):
-        self.session_id: int | None = None
-        self.symbol: str = symbol
-        self.start_base_amount: float = start_base_amount
-        self.start_quote_amount: float = start_quote_amount
-        self.stage: int = stage
-        self.average_cost_acquired_assets: float = average_cost_acquired_assets
-        self.last_action: str = last_action
-        self.strategy_id: int = strategy_id
+    def __init__(self, session_id=0):
+        self.session_id: int = session_id
+        self.symbol: str = ""
+        self.start_base_amount: float = 0
+        self.start_quote_amount: float = 0
+        self.stage: int = 0
+        self.average_cost_acquired_assets: float = 0
+        self.last_action: str = ""
+        self.strategy_id: int = 0
+        if self.session_id > 0:
+            self.get()
+
+    def save(self):
+        session_id = save(self)
+        self.session_id = session_id
+        logger.info("Strategy has been saved")
+
+    def get(self):
+        session_dict = get(self.session_id)
+        if session_dict is None:
+            sender.send_message(f"Trading session with id {self.session_id} not found")
+            raise LookupError(f"Trading session with id {self.session_id} not found")
+        self.load_from_dict(session_dict)
+
+    def load_from_dict(self, session_dict):
+        for key, value in session_dict.items():
+            setattr(self, key, value)
 
 
-# class TradingStrategy:
-#     def __init__(self, strategy_id=0):
-#         self.strategy_id: int = strategy_id
-#         self.symbol: str = ''
-#         self.updated_at: int = 0
-#         self.deposit_division_strategy: List[DepositPart] = []
-#         self.percentage_min_profit: float = 0
-#         self.market_indicator_to_buy: int = 0
-#         self.market_indicator_to_sell: int = 0
-#         self.candle_multiplier: int = 0
-#         if self.strategy_id > 0:
-#             self.get()
-#         else:
-#             self.update_strategy(init_update=True)
-#
-#     def update_strategy(self, init_update=False):
-#         return self.update_strategy_from_json(init_update)
-#         #  у майбутньому будемо брати дані з іншого додатку, а не з json, тому тут окремий виклик
-#
-#     def update_strategy_from_json(self, init_update=False):
-#         file_path = STRAT_FILE_PATH
-#         try:
-#             with file_path.open("r", encoding="utf-8") as f:
-#                 data = json.load(f)
-#         except FileNotFoundError:
-#             if init_update:
-#                 sender.send_message(f"Strategy JSON not found: {file_path}")
-#                 raise
-#             return False
-#
-#         try:
-#             validated_strategy = TradingStrategySchema(**data)
-#         except ValidationError as e:
-#             if init_update:
-#                 # якщо це початкове завантаження — падаємо з помилкою
-#                 sender.send_message(f"Invalid strategy JSON:\n{e}")
-#                 raise ValueError(f"Invalid strategy JSON:\n{e}")
-#             else:
-#                 # якщо це не перше завантаження — просто логуємо й пропускаємо оновлення
-#                 logger.warning("Strategy validation failed, update skipped", exc_info=e)
-#                 return False
-#
-#         if validated_strategy.updated_at <= self.updated_at:
-#             return False
-#
-#         for key, value in validated_strategy.model_dump().items():
-#             setattr(self, key, value)
-#
-#         for key, value in validated_strategy.model_dump().items():
-#             if key != "deposit_division_strategy":
-#                 setattr(self, key, value)
-#         self.deposit_division_strategy = [
-#             DepositPart(**part.model_dump()) for part in validated_strategy.deposit_division_strategy
-#         ]
-#
-#         logger.info("Strategy has been updated")
-#         self.save()
-#         logger.info("Strategy has been saved")
-#         return True
-#
-#     def save(self):
-#         strategy_id = save(self)
-#         self.strategy_id = strategy_id
-#
-#     def get(self):
-#         data = get(self.strategy_id)
-#         if data is None:
-#             sender.send_message(f"Trading strategy with id {self.strategy_id} not found")
-#             raise LookupError(f"Trading strategy with id {self.strategy_id} not found")
-#
-#         strategy_dict, deposit_parts = data
-#         self.load_from_dict(strategy_dict, deposit_parts)
-#
-#     def load_from_dict(self, strategy_dict, deposit_parts_list):
-#         for key, value in strategy_dict.items():
-#             if key != "deposit_division_strategy":
-#                 setattr(self, key, value)
-#
-#         self.deposit_division_strategy = [
-#             DepositPart(**part) for part in deposit_parts_list
-#         ]

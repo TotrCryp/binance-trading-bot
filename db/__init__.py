@@ -40,4 +40,37 @@ with get_db() as conn:
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        order_list_id INTEGER NOT NULL,
+        client_order_id TEXT,
+        transact_time INTEGER,
+        price REAL,
+        orig_qty REAL,
+        executed_qty REAL,
+        orig_quote_order_qty REAL,
+        cummulative_quote_qty REAL,
+        status TEXT,
+        time_in_force TEXT,
+        type TEXT,
+        side TEXT,
+        working_time INTEGER
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS fills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        price REAL,
+        qty REAL,
+        commission REAL,
+        commission_asset TEXT,
+        trade_id INTEGER,
+        FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
+    )
+    """)
+
     conn.commit()

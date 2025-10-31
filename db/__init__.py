@@ -36,6 +36,7 @@ with get_db() as conn:
         average_cost_acquired_assets REAL NOT NULL,
         last_action TEXT NOT NULL, 
         strategy_id INTEGER NOT NULL,
+        start_time INTEGER,
         FOREIGN KEY(strategy_id) REFERENCES trading_strategy(id)
     )
     """)

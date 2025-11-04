@@ -21,7 +21,7 @@ class TradingSession:
         else:
             last_id = get_last_id()
             if last_id:
-                self.session_id: int = last_id()
+                self.session_id: int = last_id
                 self.get()
 
     def save(self):

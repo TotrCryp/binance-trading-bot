@@ -1,13 +1,19 @@
 from core.logger import get_logger
 from core.sender import Sender
+from core.ticker import Ticker, threading
 from core.domain.strategy import TradingStrategy
 from core.domain.symbol import Symbol
 from core.domain.session import TradingSession
 from core.domain.order import Order, Fill
+from datetime import datetime, timezone
 
 
 logger = get_logger(__name__)
 sender = Sender()
+
+
+def job(trading_strategy, trading_session, symbol):
+    print("Tick:", trading_strategy, trading_session, symbol)
 
 
 def continue_trading_session(account):
@@ -39,42 +45,48 @@ def trading_cycle(account):
         #     trading_session = repo.save(trading_session)
 
 
+def start_new_session():
+    now_utc = datetime.now(timezone.utc)
+    unix_time = int(now_utc.timestamp())
+    trading_strategy = TradingStrategy()
+    trading_session = TradingSession(start_time=unix_time, force_new_session=True)
+    symbol = Symbol(trading_strategy.symbol)
+    symbol.fill_data()
+    trading_session.symbol = symbol.symbol
+    trading_session.start_base_amount = 10
+    trading_session.start_quote_amount = 0.0001
+    trading_session.last_action = "START"
+    trading_session.stage = 0
+    trading_session.strategy_id = trading_strategy.strategy_id
+    trading_session.save()
+    return trading_strategy, trading_session, symbol
+
+
 def run_trading(force_new_session=False):
     if force_new_session:
         # якщо явно вказано почати нову сесію, то не потрібно отримувати дані про останню сесію з БД,
-        # просто отримуємо стратегію та створюємо нову сесію
-        trading_strategy = TradingStrategy()
-        trading_session = TradingSession(start_time=1760000000)
-        symbol = Symbol(trading_strategy.symbol)
-        symbol.fill_data()
-        trading_session.symbol = symbol.symbol
-        trading_session.start_base_amount = 10
-        trading_session.start_quote_amount = 0.0001
-        trading_session.last_action = "START"
-        trading_session.stage = 0
-        trading_session.strategy_id = trading_strategy.strategy_id
-        trading_session.save()
+        logger.info("Launch with the 'force_new_session' parameter, forcibly starting a new session")
+        trading_strategy, trading_session, symbol = start_new_session()
     else:
         # пробуємо отримати дані про останню сесію з БД, також визначаємо яка була стратегія, та її також беремо з БД
+        logger.info("Checking for an incomplete session...")
         trading_session = TradingSession()
         if trading_session.session_id > 0:
+            logger.info(f"Incomplete session {trading_session.session_id} has been detected, restoring this session")
             trading_strategy = TradingStrategy(strategy_id=trading_session.strategy_id)
             symbol = Symbol(trading_strategy.symbol)
             symbol.fill_data()
         else:
             # якщо в БД даних немає, то починаємо нову сесію
-            trading_strategy = TradingStrategy()
-            symbol = Symbol(trading_strategy.symbol)
-            symbol.fill_data()
-            trading_session.symbol = symbol.symbol
-            trading_session.start_base_amount = 10
-            trading_session.start_quote_amount = 0.0001
-            trading_session.last_action = "START"
-            trading_session.stage = 0
-            trading_session.strategy_id = trading_strategy.strategy_id
-            trading_session.save()
+            logger.info("No incomplete session detected, starting a new session")
+            trading_strategy, trading_session, symbol = start_new_session()
 
     # далі все однаково для обох сценаріїв
+    # print(trading_strategy, trading_session, symbol)
+
+    ticker = Ticker(3, job, trading_strategy, trading_session, symbol)
+    thread = threading.Thread(target=ticker.start)
+    thread.start()
 
     # new_order = Order(symbol=trading_session.symbol,
     #                   side="SELL",

@@ -42,21 +42,29 @@ def some_about_order(trading_session):
 
 
 def continue_trading_session(account):
-    # тут треба визначити коли ми просто пропускаємо тік, а коли повністю зупиняємось
     if not account.can_trade:
         sender.send_message("Logic violation: account cant trade")
         raise RuntimeError("Logic violation: account cant trade")
 
+    exemple_just_skip_tick = False
+    if exemple_just_skip_tick:
+        return False
 
-def trading_cycle(account, trading_strategy, trading_session, symbol):
+    return True
+
+
+def trading_cycle(ticker, account, trading_strategy, trading_session, symbol):
     """
-    перевіряємо чи можна продовжувати
     перевіряємо чи є оновлена стратегія
     якщо оновилась стратегія, то починаємо нову сесію
     """
+
+    # перевіряємо чи можна продовжувати
     if not continue_trading_session(account):
         return
     print("Tick:", trading_strategy, trading_session, symbol)
+
+    # ticker.stop()
 
 
 def start_new_session(account):
@@ -99,6 +107,10 @@ def run_trading(force_new_session=False):
             trading_strategy, trading_session, symbol = start_new_session(account)
 
     # далі все однаково для обох сценаріїв
-    ticker = Ticker(10, trading_cycle, account, trading_strategy, trading_session, symbol)
+    ticker = Ticker(10, trading_cycle,
+                    account=account,
+                    trading_strategy=trading_strategy,
+                    trading_session=trading_session,
+                    symbol=symbol)
     thread = threading.Thread(target=ticker.start)
     thread.start()

@@ -13,7 +13,7 @@ class Ticker:
     def start(self):
         next_time = time.time()
         while not self._stop.is_set():
-            self.func(*self.args, **self.kwargs)
+            self.func(self, *self.args, **self.kwargs)
             next_time += self.interval
             sleep_time = next_time - time.time()
             if sleep_time > 0:

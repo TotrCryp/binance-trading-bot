@@ -14,31 +14,35 @@ sender = Sender()
 
 
 def some_about_order(trading_session):
-    new_order = Order(symbol=trading_session.symbol,
+    new_order = Order(session_id=trading_session.session_id,
+                      symbol=trading_session.symbol,
                       side="SELL",
-                      order_type="LIMIT",
-                      time_in_force="GTC",
-                      session_id=trading_session.session_id)
-
-    new_order.order_id = 1
-    new_order.order_list_id = 11
-    new_order.client_order_id = "myOrder001"
-    new_order.transact_time = 1725000000000
-    new_order.price = 68000.5
-    new_order.orig_qty = 1
-    new_order.executed_qty = 1
-    new_order.orig_quote_order_qty = 68000.5
-    new_order.cummulative_quote_qty = 68000.5
-    new_order.status = "FILLED"
-    new_order.working_time = 1725000000000
-
-    fills = [
-        Fill(price=78000, qty=0.6, commission=0.4, commission_asset="BTS", trade_id=234),
-        Fill(price=79000, qty=0.4, commission=0.2, commission_asset="BNB", trade_id=1234)
-    ]
-
-    new_order.fills = fills
-    new_order.save()
+                      qty=0.001,
+                      price=100000
+                      )
+    print(new_order.__dict__)
+    new_order.place_order()
+    print(new_order.__dict__)
+    s=1
+    # new_order.order_id = 1
+    # new_order.order_list_id = 11
+    # new_order.client_order_id = "myOrder001"
+    # new_order.transact_time = 1725000000000
+    # new_order.price = 68000.5
+    # new_order.orig_qty = 1
+    # new_order.executed_qty = 1
+    # new_order.orig_quote_order_qty = 68000.5
+    # new_order.cummulative_quote_qty = 68000.5
+    # new_order.status = "FILLED"
+    # new_order.working_time = 1725000000000
+    #
+    # fills = [
+    #     Fill(price=78000, qty=0.6, commission=0.4, commission_asset="BTS", trade_id=234),
+    #     Fill(price=79000, qty=0.4, commission=0.2, commission_asset="BNB", trade_id=1234)
+    # ]
+    #
+    # new_order.fills = fills
+    # new_order.save()
 
 
 def continue_trading_session(account):
@@ -68,6 +72,7 @@ def trading_cycle(ticker, account, trading_strategy, trading_session, symbol):
             run_trading(force_new_session=True)
 
     # Тут все починається торгівля
+    some_about_order(trading_session)
 
     # ticker.stop()
 

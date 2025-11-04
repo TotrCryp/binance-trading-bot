@@ -39,5 +39,3 @@ class TradingSession:
     def load_from_dict(self, session_dict):
         for key, value in session_dict.items():
             setattr(self, key, value)
-
-

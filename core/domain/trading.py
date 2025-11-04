@@ -54,15 +54,20 @@ def continue_trading_session(account):
 
 
 def trading_cycle(ticker, account, trading_strategy, trading_session, symbol):
-    """
-    перевіряємо чи є оновлена стратегія
-    якщо оновилась стратегія, то починаємо нову сесію
-    """
 
     # перевіряємо чи можна продовжувати
     if not continue_trading_session(account):
         return
     print("Tick:", trading_strategy, trading_session, symbol)
+
+    # Перевіряємо чи є оновлена стратегія. Якщо оновилась стратегія, то починаємо нову сесію
+    if trading_session.stage == 0:
+        if trading_strategy.update_strategy():
+            logger.info("Trading strategy has been updated. Stopping the current session to start new session")
+            ticker.stop()
+            run_trading(force_new_session=True)
+
+    # Тут все починається торгівля
 
     # ticker.stop()
 

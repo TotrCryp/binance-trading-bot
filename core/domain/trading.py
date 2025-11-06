@@ -13,12 +13,12 @@ logger = get_logger(__name__)
 sender = Sender()
 
 
-def some_about_order(trading_session):
+def some_about_order(trading_session, symbol):
     new_order = Order(session_id=trading_session.session_id,
-                      symbol=trading_session.symbol,
+                      symbol=symbol,
                       side="SELL",
-                      qty=0.001,
-                      price=100000
+                      qty=0.0001,
+                      price=200000
                       )
     print(new_order.__dict__)
     new_order.place_order()
@@ -72,7 +72,7 @@ def trading_cycle(ticker, account, trading_strategy, trading_session, symbol):
             run_trading(force_new_session=True)
 
     # Тут все починається торгівля
-    some_about_order(trading_session)
+    some_about_order(trading_session, symbol)
 
     # ticker.stop()
 

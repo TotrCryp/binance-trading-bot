@@ -1,5 +1,6 @@
 from typing import List
 from core.logger import get_logger
+from core.domain.symbol import Symbol
 from db.order import save
 from api.binance.api_order import BinanceOrderAPI
 
@@ -17,19 +18,20 @@ class Fill:
 
 class Order:
     def __init__(self, session_id: int,
-                 symbol: str,
+                 symbol: Symbol,
                  side: str,
                  qty: float,
                  price: float,
                  order_type: str = "LIMIT",
                  time_in_force: str = "FOK"):
         self.order_id: int = 0
-        self.symbol: str = symbol
+        self._obj_symbol = symbol
+        self.symbol: str = symbol.symbol
         self.order_list_id: int = 0
         self.client_order_id: str = ""
         self.transact_time: int = 0
-        self.price: float = price
-        self.orig_qty: float = qty
+        self.price: float = self._obj_symbol.filters.adjust_price(price)
+        self.orig_qty: float = self._obj_symbol.filters.adjust_lot_size(qty)
         self.executed_qty: float = 0
         self.orig_quote_order_qty: float = 0
         self.cummulative_quote_qty: float = 0
@@ -50,9 +52,22 @@ class Order:
                                               self.time_in_force)
         if result and isinstance(result, dict):
             for key, value in result.items():
+                if key == "fills" and isinstance(value, list):
+                    self.fills = [
+                        Fill(
+                            price=f.get("price"),
+                            qty=f.get("qty"),
+                            commission=f.get("commission"),
+                            commission_asset=f.get("commissionAsset"),
+                            trade_id=f.get("tradeId"),
+                        )
+                        for f in value
+                    ]
+                    continue
                 attr_name = self._to_attr_name(key)
                 if hasattr(self, attr_name):
                     setattr(self, attr_name, value)
+            self.save()
 
     @staticmethod
     def _to_attr_name(api_key: str) -> str:

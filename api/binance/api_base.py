@@ -37,5 +37,12 @@ class BaseAPI:
 
     @staticmethod
     def prepare_params(params: dict) -> dict:
-        params = {k: ("true" if v else "false") if isinstance(v, bool) else v for k, v in params.items()}
-        return params
+        result = {}
+        for k, v in params.items():
+            if isinstance(v, bool):
+                v = "true" if v else "false"
+            elif isinstance(v, float):
+                v = format(v, ".8f").rstrip("0").rstrip(".")
+            result[k] = v
+        return result
+

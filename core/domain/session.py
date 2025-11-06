@@ -1,6 +1,7 @@
 from core.sender import Sender
 from core.logger import get_logger
 from db.trading_session import save, get, get_last_id
+from api.binance.api_depth import BinanceDepthAPI
 
 sender = Sender()
 logger = get_logger(__name__)
@@ -39,3 +40,32 @@ class TradingSession:
     def load_from_dict(self, session_dict):
         for key, value in session_dict.items():
             setattr(self, key, value)
+
+    def get_price_from_depth(self, side: str, quantity: float, ) -> float:
+        depth_data = BinanceDepthAPI().get_depth(self.symbol)
+        # Якщо продаємо — беремо покупців (bids), починаючи з найвищої ціни.
+        # Якщо купуємо — беремо продавців (asks), починаючи з найнижчої.
+        book = depth_data["bids"] if side == "sell" else depth_data["asks"]
+
+        remaining = quantity
+        total_cost = 0.0
+        total_acquired = 0.0
+
+        for price_str, qty_str in book:
+            price = float(price_str)
+            avail = float(qty_str)
+
+            if remaining <= 0:
+                break
+
+            trade_qty = min(remaining, avail)
+            total_cost += trade_qty * price
+            total_acquired += trade_qty
+            remaining -= trade_qty
+
+        if remaining > 0:
+            # Якщо в стакані не вистачає об’єму — значить, ціна не визначається.
+            raise ValueError("Недостатньо об’єму у стакані для заданої кількості")
+
+        # Середня ціна, по якій реально виконається ордер
+        return total_cost / total_acquired

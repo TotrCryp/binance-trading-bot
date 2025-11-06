@@ -23,6 +23,7 @@ def some_about_order(trading_session, symbol):
     print(new_order.__dict__)
     new_order.place_order()
     print(new_order.__dict__)
+
     s=1
     # new_order.order_id = 1
     # new_order.order_list_id = 11
@@ -57,7 +58,7 @@ def continue_trading_session(account):
     return True
 
 
-def trading_cycle(ticker, account, trading_strategy, trading_session, symbol):
+def trading_cycle(ticker, account, trading_strategy: TradingStrategy, trading_session: TradingSession, symbol):
 
     # перевіряємо чи можна продовжувати
     if not continue_trading_session(account):
@@ -72,7 +73,10 @@ def trading_cycle(ticker, account, trading_strategy, trading_session, symbol):
             run_trading(force_new_session=True)
 
     # Тут все починається торгівля
-    some_about_order(trading_session, symbol)
+    # some_about_order(trading_session, symbol)
+
+    price = trading_session.get_price_from_depth("sell", 0.001)
+    s = 1
 
     # ticker.stop()
 

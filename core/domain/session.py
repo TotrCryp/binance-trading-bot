@@ -41,7 +41,7 @@ class TradingSession:
         for key, value in session_dict.items():
             setattr(self, key, value)
 
-    def get_price_from_depth(self, side: str, quantity: float, ) -> float:
+    def get_price_from_depth(self, side: str, quantity: float, ) -> float | None:
         depth_data = BinanceDepthAPI().get_depth(self.symbol)
         # Якщо продаємо — беремо покупців (bids), починаючи з найвищої ціни.
         # Якщо купуємо — беремо продавців (asks), починаючи з найнижчої.
@@ -65,7 +65,8 @@ class TradingSession:
 
         if remaining > 0:
             # Якщо в стакані не вистачає об’єму — значить, ціна не визначається.
-            raise ValueError("Недостатньо об’єму у стакані для заданої кількості")
+            logger.warn("There is not enough volume in order book for the given quantity")
+            return None
 
         # Середня ціна, по якій реально виконається ордер
         return total_cost / total_acquired

@@ -24,27 +24,6 @@ def some_about_order(trading_session, symbol):
     new_order.place_order()
     print(new_order.__dict__)
 
-    s=1
-    # new_order.order_id = 1
-    # new_order.order_list_id = 11
-    # new_order.client_order_id = "myOrder001"
-    # new_order.transact_time = 1725000000000
-    # new_order.price = 68000.5
-    # new_order.orig_qty = 1
-    # new_order.executed_qty = 1
-    # new_order.orig_quote_order_qty = 68000.5
-    # new_order.cummulative_quote_qty = 68000.5
-    # new_order.status = "FILLED"
-    # new_order.working_time = 1725000000000
-    #
-    # fills = [
-    #     Fill(price=78000, qty=0.6, commission=0.4, commission_asset="BTS", trade_id=234),
-    #     Fill(price=79000, qty=0.4, commission=0.2, commission_asset="BNB", trade_id=1234)
-    # ]
-    #
-    # new_order.fills = fills
-    # new_order.save()
-
 
 def continue_trading_session(account):
     if not account.can_trade:
@@ -75,8 +54,37 @@ def trading_cycle(ticker, account, trading_strategy: TradingStrategy, trading_se
     # Тут все починається торгівля
     # some_about_order(trading_session, symbol)
 
-    price = trading_session.get_price_from_depth("sell", 0.001)
-    s = 1
+    if trading_session.last_action == "BUY":
+        price = trading_session.get_price_from_depth("sell", 0.001)
+        if price:
+            print("for sell:", price)
+            if price > trading_session.average_cost_acquired_assets:
+                new_order = Order(session_id=trading_session.session_id,
+                                  symbol=symbol,
+                                  side="SELL",
+                                  qty=0.001,
+                                  price=price
+                                  )
+                new_order.place_order()
+                print(new_order.__dict__)
+                if new_order.status == "FILLED":
+                    trading_session.last_action = "SELL"
+                    trading_session.average_cost_acquired_assets = price
+    else:
+        price = trading_session.get_price_from_depth("buy", 0.001)
+        if price:
+            print("for buy:", price)
+            new_order = Order(session_id=trading_session.session_id,
+                              symbol=symbol,
+                              side="BUY",
+                              qty=0.001,
+                              price=price
+                              )
+            new_order.place_order()
+            print(new_order.__dict__)
+            if new_order.status == "FILLED":
+                trading_session.last_action = "BUY"
+                trading_session.average_cost_acquired_assets = price
 
     # ticker.stop()
 

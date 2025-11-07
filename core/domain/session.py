@@ -1,6 +1,6 @@
 from core.sender import Sender
 from core.logger import get_logger
-from db.trading_session import save, get, get_last_id
+from db.trading_session import save, update, get, get_last_id
 from api.binance.api_depth import BinanceDepthAPI
 
 sender = Sender()
@@ -14,6 +14,8 @@ class TradingSession:
             self.symbol: str = ""
             self.start_base_amount: float = 0
             self.start_quote_amount: float = 0
+            self.finish_base_amount: float = 0
+            self.finish_quote_amount: float = 0
             self.stage: int = 0
             self.average_cost_acquired_assets: float = 0
             self.last_action: str = ""
@@ -26,9 +28,13 @@ class TradingSession:
                 self.get()
 
     def save(self):
-        session_id = save(self)
-        self.session_id = session_id
-        logger.info("Session has been saved")
+        if self.session_id == 0:
+            session_id = save(self)
+            self.session_id = session_id
+            logger.info("Session has been saved")
+        else:
+            update(self)
+            logger.info("Session has been updated")
 
     def get(self):
         session_dict = get(self.session_id)
@@ -68,5 +74,10 @@ class TradingSession:
             logger.warn("There is not enough volume in order book for the given quantity")
             return None
 
-        # Середня ціна, по якій реально виконається ордер
         return total_cost / total_acquired
+
+    def recalc_average_cost(self, new_qty, new_avg_price) -> float:
+        new_total_value = new_qty * new_avg_price
+        old_total_value = self.finish_base_amount * self.average_cost_acquired_assets
+        total_qty = self.finish_base_amount + new_qty
+        return (old_total_value + new_total_value) / total_qty

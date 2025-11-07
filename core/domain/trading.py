@@ -13,16 +13,31 @@ logger = get_logger(__name__)
 sender = Sender()
 
 
-def some_about_order(trading_session, symbol):
+def attempt_make_deal(account, trading_session, symbol, side, qty, price):
+    logger.info(f"Attempt place order: {symbol.symbol}, {side}, price: {price}, qty: {qty}")
+
     new_order = Order(session_id=trading_session.session_id,
                       symbol=symbol,
-                      side="SELL",
-                      qty=0.0001,
-                      price=200000
+                      side=side.upper(),
+                      qty=qty,
+                      price=price
                       )
-    print(new_order.__dict__)
     new_order.place_order()
-    print(new_order.__dict__)
+
+    logger.info(f"Order {new_order.status}")
+
+    if new_order.status == "FILLED":
+        avg_fill_price = new_order.calculate_avg_fill_price()
+        trading_session.last_action = side.upper()
+        trading_session.average_cost_acquired_assets = 0 if side == "sell" else (
+            trading_session.recalc_average_cost(new_order.executed_qty, avg_fill_price))
+        # account.fill_data()
+        # trading_balances = account.get_trading_balances(symbol)
+        # trading_session.finish_base_amount = trading_balances["base_amount"]
+        # trading_session.finish_quote_amount = trading_balances["quote_amount"]
+        trading_session.finish_base_amount += new_order.executed_qty
+        trading_session.finish_quote_amount -= new_order.executed_qty * avg_fill_price
+        trading_session.save()
 
 
 def continue_trading_session(account):
@@ -42,7 +57,6 @@ def trading_cycle(ticker, account, trading_strategy: TradingStrategy, trading_se
     # перевіряємо чи можна продовжувати
     if not continue_trading_session(account):
         return
-    print("Tick:", trading_strategy, trading_session, symbol)
 
     # Перевіряємо чи є оновлена стратегія. Якщо оновилась стратегія, то починаємо нову сесію
     if trading_session.stage == 0:
@@ -52,39 +66,23 @@ def trading_cycle(ticker, account, trading_strategy: TradingStrategy, trading_se
             run_trading(force_new_session=True)
 
     # Тут все починається торгівля
-    # some_about_order(trading_session, symbol)
+    # if trading_session.last_action == "BUY":
+    #     price = trading_session.get_price_from_depth("sell", 0.001)
+    #     if price:
+    #         pass
+    #         # attempt_make_deal(account, trading_session, symbol, side, qty, price)
+    # else:
+    #     price = trading_session.get_price_from_depth("buy", 0.001)
+    #     if price:
+    #         pass
 
-    if trading_session.last_action == "BUY":
-        price = trading_session.get_price_from_depth("sell", 0.001)
-        if price:
-            print("for sell:", price)
-            if price > trading_session.average_cost_acquired_assets:
-                new_order = Order(session_id=trading_session.session_id,
-                                  symbol=symbol,
-                                  side="SELL",
-                                  qty=0.001,
-                                  price=price
-                                  )
-                new_order.place_order()
-                print(new_order.__dict__)
-                if new_order.status == "FILLED":
-                    trading_session.last_action = "SELL"
-                    trading_session.average_cost_acquired_assets = price
+    print("tick")
+    price = trading_session.get_price_from_depth("buy", 0.001)
+    if trading_session.average_cost_acquired_assets > 0:
+        if price < trading_session.average_cost_acquired_assets:
+            attempt_make_deal(account, trading_session, symbol, "buy", 0.001, price)
     else:
-        price = trading_session.get_price_from_depth("buy", 0.001)
-        if price:
-            print("for buy:", price)
-            new_order = Order(session_id=trading_session.session_id,
-                              symbol=symbol,
-                              side="BUY",
-                              qty=0.001,
-                              price=price
-                              )
-            new_order.place_order()
-            print(new_order.__dict__)
-            if new_order.status == "FILLED":
-                trading_session.last_action = "BUY"
-                trading_session.average_cost_acquired_assets = price
+        attempt_make_deal(account, trading_session, symbol, "buy", 0.001, price)
 
     # ticker.stop()
 

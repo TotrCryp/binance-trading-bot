@@ -32,6 +32,8 @@ with get_db() as conn:
         symbol TEXT NOT NULL,
         start_base_amount REAL NOT NULL,
         start_quote_amount REAL NOT NULL,
+        finish_base_amount REAL NOT NULL,
+        finish_quote_amount REAL NOT NULL,
         stage INTEGER NOT NULL,
         average_cost_acquired_assets REAL NOT NULL,
         last_action TEXT NOT NULL, 

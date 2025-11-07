@@ -8,10 +8,10 @@ logger = get_logger(__name__)
 
 
 class Fill:
-    def __init__(self, price: float, qty: float, commission: float, commission_asset: str, trade_id: int):
-        self.price: float = price
-        self.qty: float = qty
-        self.commission: float = commission
+    def __init__(self, price: str, qty: str, commission: str, commission_asset: str, trade_id: int):
+        self.price: float = float(price)
+        self.qty: float = float(qty)
+        self.commission: float = float(commission)
         self.commission_asset: str = commission_asset
         self.trade_id: int = trade_id
 
@@ -32,9 +32,9 @@ class Order:
         self.transact_time: int = 0
         self.price: float = self._obj_symbol.filters.adjust_price(price)
         self.orig_qty: float = self._obj_symbol.filters.adjust_lot_size(qty)
-        self.executed_qty: float = 0
-        self.orig_quote_order_qty: float = 0
-        self.cummulative_quote_qty: float = 0
+        self.executed_qty: float = 0.0
+        self.orig_quote_order_qty: float = 0.0
+        self.cummulative_quote_qty: float = 0.0
         self.status: str = ""
         self.time_in_force: str = time_in_force
         self.type: str = order_type
@@ -65,9 +65,25 @@ class Order:
                     ]
                     continue
                 attr_name = self._to_attr_name(key)
+                # if hasattr(self, attr_name):
+                #     setattr(self, attr_name, value)
+
                 if hasattr(self, attr_name):
+                    current_type = type(getattr(self, attr_name))
+                    if current_type is float and isinstance(value, str):
+                        value = float(value)
+                    elif current_type is int and isinstance(value, str) and value.isdigit():
+                        value = int(value)
                     setattr(self, attr_name, value)
+
             self.save()
+
+    def calculate_avg_fill_price(self) -> float:
+        total_qty = sum(f.qty for f in self.fills)
+        if not total_qty:
+            return 0.0
+        total_value = sum(f.price * f.qty for f in self.fills)
+        return total_value / total_qty
 
     @staticmethod
     def _to_attr_name(api_key: str) -> str:

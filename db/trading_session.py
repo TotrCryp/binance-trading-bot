@@ -1,16 +1,31 @@
 from db.service import get_db
 
 
+def update(session):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""UPDATE trading_session SET symbol = ?, start_base_amount = ?, start_quote_amount = ?, 
+                finish_base_amount = ?, finish_quote_amount = ?, stage = ?, average_cost_acquired_assets = ?, 
+                last_action = ?, strategy_id = ?, start_time = ? WHERE id = ?
+        """, (
+            session.symbol, session.start_base_amount, session.start_quote_amount, session.finish_base_amount,
+            session.finish_quote_amount, session.stage, session.average_cost_acquired_assets, session.last_action,
+            session.strategy_id, session.start_time, session.session_id
+        ))
+        conn.commit()
+
+
 def save(session):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO trading_session (symbol, start_base_amount, start_quote_amount, stage, 
-                                          average_cost_acquired_assets, last_action, strategy_id, start_time)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO trading_session (symbol, start_base_amount, start_quote_amount, 
+            finish_base_amount, finish_quote_amount, stage, 
+            average_cost_acquired_assets, last_action, strategy_id, start_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (session.symbol, session.start_base_amount, session.start_quote_amount,
-              session.stage, session.average_cost_acquired_assets, session.last_action,
-              session.strategy_id, session.start_time))
+              session.finish_base_amount, session.finish_quote_amount, session.stage,
+              session.average_cost_acquired_assets, session.last_action, session.strategy_id, session.start_time))
 
         session_id = cursor.lastrowid
         conn.commit()

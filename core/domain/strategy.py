@@ -115,3 +115,9 @@ class TradingStrategy:
         self.deposit_division_strategy = [
             DepositPart(**part) for part in deposit_parts_list
         ]
+
+    def get_batch_list(self):
+        batch_list = []
+        for e in self.deposit_division_strategy:
+            batch_list.insert(e.stage, e.percentage_of_deposit)
+        return batch_list

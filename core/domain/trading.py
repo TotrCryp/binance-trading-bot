@@ -6,6 +6,7 @@ from core.domain.strategy import TradingStrategy
 from core.domain.symbol import Symbol
 from core.domain.session import TradingSession
 from core.domain.order import Order, Fill
+from core.domain.deposit_divider import DepositDivider
 from datetime import datetime, timezone
 
 
@@ -13,7 +14,7 @@ logger = get_logger(__name__)
 sender = Sender()
 
 
-def attempt_make_deal(account, trading_session, symbol, side, qty, price):
+def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, qty, price):
     logger.info(f"Attempt place order: {symbol.symbol}, {side}, price: {price}, qty: {qty}")
 
     new_order = Order(session_id=trading_session.session_id,
@@ -31,12 +32,15 @@ def attempt_make_deal(account, trading_session, symbol, side, qty, price):
         trading_session.last_action = side.upper()
         trading_session.average_cost_acquired_assets = 0 if side == "sell" else (
             trading_session.recalc_average_cost(new_order.executed_qty, avg_fill_price))
-        # account.fill_data()
-        # trading_balances = account.get_trading_balances(symbol)
-        # trading_session.finish_base_amount = trading_balances["base_amount"]
-        # trading_session.finish_quote_amount = trading_balances["quote_amount"]
-        trading_session.finish_base_amount += new_order.executed_qty
-        trading_session.finish_quote_amount -= new_order.executed_qty * avg_fill_price
+        trading_session.stage = 0 if side == "sell" else (
+            trading_session.stage + 1)
+        account.fill_data()
+        trading_balances = account.get_trading_balances(symbol)
+        trading_session.finish_base_amount = trading_balances["base_amount"]
+        trading_session.finish_quote_amount = trading_balances["quote_amount"]
+        # trading_session.finish_base_amount += new_order.executed_qty
+        # trading_session.finish_quote_amount -= new_order.executed_qty * avg_fill_price
+        deposit_divider.set_remnant(trading_session.finish_quote_amount)
         trading_session.save()
 
 
@@ -52,7 +56,8 @@ def continue_trading_session(account):
     return True
 
 
-def trading_cycle(ticker, account, trading_strategy: TradingStrategy, trading_session: TradingSession, symbol):
+def trading_cycle(ticker, deposit_divider, account,
+                  trading_strategy: TradingStrategy, trading_session: TradingSession, symbol):
 
     # перевіряємо чи можна продовжувати
     if not continue_trading_session(account):
@@ -77,12 +82,15 @@ def trading_cycle(ticker, account, trading_strategy: TradingStrategy, trading_se
     #         pass
 
     print("tick")
-    price = trading_session.get_price_from_depth("buy", 0.001)
+    deposit_batch = deposit_divider.get_batch(trading_session.stage)
+    qty = 1
+    price = trading_session.get_price_from_depth("buy", qty)
+    qty = deposit_batch / price
     if trading_session.average_cost_acquired_assets > 0:
         if price < trading_session.average_cost_acquired_assets:
-            attempt_make_deal(account, trading_session, symbol, "buy", 0.001, price)
+            attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
     else:
-        attempt_make_deal(account, trading_session, symbol, "buy", 0.001, price)
+        attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
 
     # ticker.stop()
 
@@ -112,6 +120,8 @@ def run_trading(force_new_session=False):
         # якщо явно вказано почати нову сесію, то не потрібно отримувати дані про останню сесію з БД,
         logger.info("Launch with the 'force_new_session' parameter, forcibly starting a new session")
         trading_strategy, trading_session, symbol = start_new_session(account)
+        deposit_divider = DepositDivider(trading_session.start_quote_amount,
+                                         trading_strategy.get_batch_list())
     else:
         # пробуємо отримати дані про останню сесію з БД, також визначаємо яка була стратегія, та її також беремо з БД
         logger.info("Checking for an incomplete session...")
@@ -121,13 +131,18 @@ def run_trading(force_new_session=False):
             trading_strategy = TradingStrategy(strategy_id=trading_session.strategy_id)
             symbol = Symbol(trading_strategy.symbol)
             symbol.fill_data()
+            deposit_divider = DepositDivider(trading_session.finish_quote_amount,
+                                             trading_strategy.get_batch_list())
         else:
             # якщо в БД даних немає, то починаємо нову сесію
             logger.info("No incomplete session detected, starting a new session")
             trading_strategy, trading_session, symbol = start_new_session(account)
+            deposit_divider = DepositDivider(trading_session.start_quote_amount,
+                                             trading_strategy.get_batch_list())
 
     # далі все однаково для обох сценаріїв
     ticker = Ticker(10, trading_cycle,
+                    deposit_divider=deposit_divider,
                     account=account,
                     trading_strategy=trading_strategy,
                     trading_session=trading_session,

@@ -2,6 +2,7 @@ from core.sender import Sender
 from core.logger import get_logger
 from db.trading_session import save, update, get, get_last_id
 from api.binance.api_depth import BinanceDepthAPI
+from api.binance.api_avg_price import BinanceAvgPriceAPI
 
 sender = Sender()
 logger = get_logger(__name__)
@@ -46,6 +47,10 @@ class TradingSession:
     def load_from_dict(self, session_dict):
         for key, value in session_dict.items():
             setattr(self, key, value)
+
+    def get_avg_price(self) -> float:
+        avg_price_data = BinanceAvgPriceAPI().get_avg_price(self.symbol)
+        return float(avg_price_data["price"])
 
     def get_price_from_depth(self, side: str, quantity: float, ) -> float | None:
         depth_data = BinanceDepthAPI().get_depth(self.symbol)

@@ -121,3 +121,23 @@ class TradingStrategy:
         for e in self.deposit_division_strategy:
             batch_list.insert(e.stage, e.percentage_of_deposit)
         return batch_list
+
+    def get_last_stage(self):
+        return len(self.deposit_division_strategy) - 1
+
+    def percentage_difference_sufficient_to_action(self, action: str, percentage_difference: float):
+        if action == "sell":
+            if self.percentage_min_profit == percentage_difference:
+                return True
+        return False
+
+    def market_conditions_sufficient_to_action(self, action: str):
+        print("Check market conditions for ", action, self.market_indicator_to_buy, self.market_indicator_to_sell)
+        return True
+
+    def get_stage_parameters(self, stage: int):
+        for stage_data in self.deposit_division_strategy:
+            if stage_data.stage == stage:
+                return stage_data
+        sender.send_message(f"Parameters for stage {stage} not found")
+        raise LookupError(f"Parameters for stage {stage} not found")

@@ -14,6 +14,18 @@ logger = get_logger(__name__)
 sender = Sender()
 
 
+def get_percentage_difference(old_value, new_value):
+    difference = new_value - old_value
+    percentage_diff = ((difference / new_value) * 100)
+    return percentage_diff
+
+
+def add_percent(numeric_value, percent_value):
+    percent = numeric_value * percent_value / 100
+    price_with_percent = numeric_value + percent
+    return price_with_percent
+
+
 def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, qty, price):
     logger.info(f"Attempt place order: {symbol.symbol}, {side}, price: {price}, qty: {qty}")
 
@@ -71,28 +83,51 @@ def trading_cycle(ticker, deposit_divider, account,
             run_trading(force_new_session=True)
 
     # Тут все починається торгівля
-    # if trading_session.last_action == "BUY":
-    #     price = trading_session.get_price_from_depth("sell", 0.001)
-    #     if price:
-    #         pass
-    #         # attempt_make_deal(account, trading_session, symbol, side, qty, price)
-    # else:
-    #     price = trading_session.get_price_from_depth("buy", 0.001)
-    #     if price:
-    #         pass
+    logger.debug("tick")
 
-    print("tick")
-    deposit_batch = deposit_divider.get_batch(trading_session.stage)
-    qty = 1
-    price = trading_session.get_price_from_depth("buy", qty)
-    qty = deposit_batch / price
-    if trading_session.average_cost_acquired_assets > 0:
-        if price < trading_session.average_cost_acquired_assets:
-            attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
-    else:
-        attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
+    avg_price = trading_session.get_avg_price()
+    percentage_difference = get_percentage_difference(trading_session.average_cost_acquired_assets, avg_price)
+    last_stage = trading_strategy.get_last_stage()
+
+    if trading_session.stage > 0:
+        """
+        Якщо стейдж більше 0 то перевіримо чи середня ціна на ринку така,
+        що допускає продаж (більша на відповідний відсоток від середньої вартості)
+        """
+        pass
+
+    elif trading_session.stage < last_stage:
+        """
+        Якщо стейдж менше останнього то перевіримо чи середня ціна на ринку така,
+        що допускає покупку (більша на відповідний відсоток від середньої вартості)
+        """
+        stage_parameters = trading_strategy.get_stage_parameters(trading_session.stage)
+        print(stage_parameters)
+
+        if abs(percentage_difference) > stage_parameters.price_change:
+            if trading_strategy.market_conditions_sufficient_to_action("buy"):
+                deposit_batch = deposit_divider.get_batch(trading_session.stage)
+                pre_qty = deposit_batch / avg_price
+                price = trading_session.get_price_from_depth("buy", pre_qty)
+                if price:
+                    # тут повторно перевіряємо чи влаштовує нас ціна, і якщо так, отримуємо кінцеву кількість для ордеру
+                    print(price)
+
+    # qty = deposit_batch/avg_price
+    # price = trading_session.get_price_from_depth("buy", qty)
+    # if trading_session.average_cost_acquired_assets > 0:
+    #     if price < trading_session.average_cost_acquired_assets:
+    #         attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
+    # else:
+    #     attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
 
     # ticker.stop()
+
+    # + Тимчасова вставка щоб продати
+    # qty = 0.1
+    # price = trading_session.get_price_from_depth("sell", qty)
+    # attempt_make_deal(deposit_divider, account, trading_session, symbol, "sell", qty, price)
+    # - Тимчасова вставка щоб продати
 
 
 def start_new_session(account):
@@ -135,7 +170,7 @@ def run_trading(force_new_session=False):
                                              trading_strategy.get_batch_list())
         else:
             # якщо в БД даних немає, то починаємо нову сесію
-            logger.info("No incomplete session detected, starting a new session")
+            logger.info("Incomplete session not detected, starting a new session")
             trading_strategy, trading_session, symbol = start_new_session(account)
             deposit_divider = DepositDivider(trading_session.start_quote_amount,
                                              trading_strategy.get_batch_list())

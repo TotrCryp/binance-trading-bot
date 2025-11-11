@@ -10,16 +10,26 @@ sender = Sender()
 class BinanceOrderAPI(BaseAPI):
 
     def post_order(self, symbol, side, quantity, price, order_type, time_in_force) -> dict:
-        params = {
-            "symbol": symbol,
-            "side": side,
-            "type": order_type,
-            "timeInForce": time_in_force,
-            "quantity": quantity,
-            "price": price,
-            "newOrderRespType": "FULL",
-            "timestamp": self._get_server_timestamp(),
-        }
+        if order_type == "MARKET":
+            params = {
+                "symbol": symbol,
+                "side": side,
+                "type": order_type,
+                "quantity": quantity,
+                "newOrderRespType": "FULL",
+                "timestamp": self._get_server_timestamp(),
+            }
+        else:
+            params = {
+                "symbol": symbol,
+                "side": side,
+                "type": order_type,
+                "timeInForce": time_in_force,
+                "quantity": quantity,
+                "price": price,
+                "newOrderRespType": "FULL",
+                "timestamp": self._get_server_timestamp(),
+            }
         params = self.prepare_params(params)
         signed_params = self._sign_params(params)
         headers = self._get_headers()

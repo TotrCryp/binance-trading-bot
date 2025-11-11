@@ -52,8 +52,6 @@ def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, q
         trading_balances = account.get_trading_balances(symbol)
         trading_session.finish_base_amount = trading_balances["base_amount"]
         trading_session.finish_quote_amount = trading_balances["quote_amount"]
-        # trading_session.finish_base_amount += new_order.executed_qty
-        # trading_session.finish_quote_amount -= new_order.executed_qty * avg_fill_price
         deposit_divider.set_remnant(trading_session.finish_quote_amount)
         trading_session.save()
 
@@ -105,12 +103,12 @@ def trading_cycle(ticker, deposit_divider, account,
             if trading_strategy.market_conditions_sufficient_to_action("sell"):
                 price = trading_session.get_price_from_depth("sell", trading_session.finish_base_amount)
                 if price:
-                    logger.debug(f"Остаточна ціна продажу: {price}")
+                    logger.info(f"Остаточна ціна продажу: {price}")
                     # тут повторно перевіряємо чи влаштовує нас ціна продажу,
                     # і якщо так, отримуємо кінцеву кількість для ордера
                     percentage_difference = get_percentage_difference(trading_session.average_cost_acquired_assets,
                                                                       price)
-                    logger.debug(f"Остаточна відсоткова різниця: {round(percentage_difference, 2)}%")
+                    logger.info(f"Остаточна відсоткова різниця: {round(percentage_difference, 2)}%")
                     if percentage_difference > trading_strategy.percentage_min_profit:
                         qty = trading_session.finish_base_amount
                         attempt_make_deal(deposit_divider=deposit_divider,
@@ -136,12 +134,12 @@ def trading_cycle(ticker, deposit_divider, account,
                 pre_qty = deposit_batch / avg_price
                 price = trading_session.get_price_from_depth("buy", pre_qty)
                 if price:
-                    logger.debug(f"Остаточна ціна купівлі: {price}")
+                    logger.info(f"Остаточна ціна купівлі: {price}")
                     # тут повторно перевіряємо чи влаштовує нас ціна купівлі,
                     # і якщо так, отримуємо кінцеву кількість для ордера
                     percentage_difference = get_percentage_difference(trading_session.average_cost_acquired_assets,
                                                                       price)
-                    logger.debug(f"Остаточна відсоткова різниця: {round(percentage_difference, 2)}%")
+                    logger.info(f"Остаточна відсоткова різниця: {round(percentage_difference, 2)}%")
                     if (percentage_difference < stage_parameters.price_change
                             or trading_session.stage == 0):
                         qty = deposit_batch / avg_price
@@ -154,14 +152,6 @@ def trading_cycle(ticker, deposit_divider, account,
                                           price=price,
                                           deposit_batch=deposit_batch,
                                           base_amount=0)
-
-    # ticker.stop()
-
-    # + Тимчасова вставка щоб продати
-    # qty = 0.1
-    # price = trading_session.get_price_from_depth("sell", qty)
-    # attempt_make_deal(deposit_divider, account, trading_session, symbol, "sell", qty, price)
-    # - Тимчасова вставка щоб продати
 
 
 def start_new_session(account):
@@ -218,3 +208,70 @@ def run_trading(force_new_session=False):
                     symbol=symbol)
     thread = threading.Thread(target=ticker.start)
     thread.start()
+
+
+def prepare_test_balances(target_amount=100):
+    account = Account()
+    account.fill_data()
+    # продаємо весь BTC
+    symbol_btc = Symbol("BTCUSDT")
+    symbol_btc.fill_data()
+    balances = account.get_trading_balances(symbol_btc)
+    btc_amount = balances["base_amount"]
+    usdt_amount = balances["quote_amount"]
+    print(f"BTC: {btc_amount}, USDT: {usdt_amount}")
+    if btc_amount > 0:
+        order = Order(1, symbol_btc, "SELL", btc_amount, 0, 0, btc_amount, "MARKET")
+        order.place_order()
+        if order.status != "FILLED":
+            print("BTC NOT продано")
+            return
+        print("Весь BTC продано")
+        account.fill_data()
+        symbol_btc.fill_data()
+        balances = account.get_trading_balances(symbol_btc)
+        btc_amount = balances["base_amount"]
+        usdt_amount = balances["quote_amount"]
+        print(f"BTC: {btc_amount}, USDT: {usdt_amount}")
+
+    # купуємо або продаємо ETH, щоб лишилось близько цільової суми
+    trade_amount = usdt_amount - target_amount
+    if abs(trade_amount) < 11:
+        # тоді так і лишаємо
+        return
+
+    symbol_eth = Symbol("ETHUSDT")
+    symbol_eth.fill_data()
+    balances = account.get_trading_balances(symbol_eth)
+    eth_amount = balances["base_amount"]
+    print(f"ETH: {eth_amount}, USDT: {usdt_amount}")
+
+    trading_session = TradingSession(start_time=0, force_new_session=True)
+    trading_session.symbol = "ETHUSDT"
+    price = trading_session.get_avg_price()
+
+    if usdt_amount > target_amount:
+        qty = trade_amount / price
+        order = Order(1, symbol_eth, "BUY", qty, 0, usdt_amount, 0, "MARKET")
+        order.place_order()
+        if order.status == "FILLED":
+            print("Купили ETH майже на всі гроші")
+        else:
+            print("Не вдалось купити ETH майже на всі гроші")
+    else:
+        qty = abs(trade_amount) / price
+        order = Order(1, symbol_eth, "SELL", qty, 0, 0, eth_amount, "MARKET")
+        order.place_order()
+        if order.status == "FILLED":
+            print("Продали частку ETH")
+        else:
+            print("Не вдалось продати частку ETH")
+
+    account.fill_data()
+    # продаємо весь BTC
+    symbol_btc = Symbol("BTCUSDT")
+    symbol_btc.fill_data()
+    balances = account.get_trading_balances(symbol_btc)
+    btc_amount = balances["base_amount"]
+    usdt_amount = balances["quote_amount"]
+    print(f"BTC: {btc_amount}, USDT: {usdt_amount}")

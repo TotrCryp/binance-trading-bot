@@ -4,7 +4,7 @@ import sys
 
 def get_logger(name: str):
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,  # INFO
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)]
     )

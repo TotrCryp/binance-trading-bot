@@ -72,6 +72,12 @@ class SymbolFilters:
             return False
         return True
 
+    def get_step_size(self):
+        f = self.filters.get("LOT_SIZE")
+        if not f:
+            return None
+        return self._float(f["stepSize"])
+
 
 class Symbol:
     def __init__(self, symbol):

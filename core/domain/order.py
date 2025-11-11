@@ -22,16 +22,19 @@ class Order:
                  side: str,
                  qty: float,
                  price: float,
+                 deposit_batch: float,
                  order_type: str = "LIMIT",
                  time_in_force: str = "FOK"):
         self.order_id: int = 0
         self._obj_symbol = symbol
+        self._deposit_batch = deposit_batch
         self.symbol: str = symbol.symbol
         self.order_list_id: int = 0
         self.client_order_id: str = ""
         self.transact_time: int = 0
         self.price: float = self._obj_symbol.filters.adjust_price(price)
         self.orig_qty: float = self._obj_symbol.filters.adjust_lot_size(qty)
+        self.adjust_qty_according_deposit_batch()
         self.executed_qty: float = 0.0
         self.orig_quote_order_qty: float = 0.0
         self.cummulative_quote_qty: float = 0.0
@@ -77,6 +80,15 @@ class Order:
                     setattr(self, attr_name, value)
 
             self.save()
+
+    def adjust_qty_according_deposit_batch(self):
+        logger.debug(f"Коригування відповідно до частки депозиту {self._deposit_batch}, ціна {self.price}")
+        logger.debug(f"Кількість до коригування: {self.orig_qty}")
+        step_size = self._obj_symbol.filters.get_step_size()
+        if step_size:
+            while self._deposit_batch < self.price * self.orig_qty:
+                self.orig_qty -= step_size
+        logger.debug(f"Кількість після коригування: {self.orig_qty}")
 
     def calculate_avg_fill_price(self) -> float:
         total_qty = sum(f.qty for f in self.fills)

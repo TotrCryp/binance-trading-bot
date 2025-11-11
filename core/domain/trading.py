@@ -26,14 +26,15 @@ def add_percent(numeric_value, percent_value):
     return price_with_percent
 
 
-def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, qty, price):
+def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, qty, price, deposit_batch):
     logger.info(f"Attempt place order: {symbol.symbol}, {side}, price: {price}, qty: {qty}")
 
     new_order = Order(session_id=trading_session.session_id,
                       symbol=symbol,
                       side=side.upper(),
                       qty=qty,
-                      price=price
+                      price=price,
+                      deposit_batch=deposit_batch
                       )
     new_order.place_order()
 
@@ -94,24 +95,33 @@ def trading_cycle(ticker, deposit_divider, account,
         Якщо стейдж більше 0 то перевіримо чи середня ціна на ринку така,
         що допускає продаж (більша на відповідний відсоток від середньої вартості)
         """
-        pass
+        if percentage_difference > trading_strategy.percentage_min_profit:
+            pass
 
     elif trading_session.stage < last_stage:
         """
         Якщо стейдж менше останнього то перевіримо чи середня ціна на ринку така,
-        що допускає покупку (більша на відповідний відсоток від середньої вартості)
+        що допускає покупку (менша на відповідний відсоток від середньої вартості, або це нульовий стейдж)
         """
         stage_parameters = trading_strategy.get_stage_parameters(trading_session.stage)
-        print(stage_parameters)
-
-        if abs(percentage_difference) > stage_parameters.price_change:
+        if (percentage_difference < stage_parameters.price_change
+                or trading_session.stage == 0):
             if trading_strategy.market_conditions_sufficient_to_action("buy"):
                 deposit_batch = deposit_divider.get_batch(trading_session.stage)
                 pre_qty = deposit_batch / avg_price
                 price = trading_session.get_price_from_depth("buy", pre_qty)
                 if price:
                     # тут повторно перевіряємо чи влаштовує нас ціна, і якщо так, отримуємо кінцеву кількість для ордеру
-                    print(price)
+                    percentage_difference = get_percentage_difference(trading_session.average_cost_acquired_assets,
+                                                                      price)
+                    if (percentage_difference < stage_parameters.price_change
+                            or trading_session.stage == 0):
+                        qty = deposit_batch / avg_price
+                        logger.debug(price)
+                        attempt_make_deal(deposit_divider, account, trading_session, symbol,
+                                          "buy", qty, price, deposit_batch)
+
+                        a = 1
 
     # qty = deposit_batch/avg_price
     # price = trading_session.get_price_from_depth("buy", qty)

@@ -23,18 +23,23 @@ class Order:
                  qty: float,
                  price: float,
                  deposit_batch: float,
+                 base_amount: float,
                  order_type: str = "LIMIT",
                  time_in_force: str = "FOK"):
         self.order_id: int = 0
         self._obj_symbol = symbol
         self._deposit_batch = deposit_batch
+        self._base_amount = base_amount
         self.symbol: str = symbol.symbol
         self.order_list_id: int = 0
         self.client_order_id: str = ""
         self.transact_time: int = 0
         self.price: float = self._obj_symbol.filters.adjust_price(price)
         self.orig_qty: float = self._obj_symbol.filters.adjust_lot_size(qty)
-        self.adjust_qty_according_deposit_batch()
+        if side == "BUY":
+            self.adjust_qty_according_deposit_batch()
+        elif side == "SELL":
+            self.adjust_qty_according_base_amount()
         self.executed_qty: float = 0.0
         self.orig_quote_order_qty: float = 0.0
         self.cummulative_quote_qty: float = 0.0
@@ -87,6 +92,15 @@ class Order:
         step_size = self._obj_symbol.filters.get_step_size()
         if step_size:
             while self._deposit_batch < self.price * self.orig_qty:
+                self.orig_qty -= step_size
+        logger.debug(f"Кількість після коригування: {self.orig_qty}")
+
+    def adjust_qty_according_base_amount(self):
+        logger.debug(f"Коригування відповідно до залишку базового активу {self._base_amount}")
+        logger.debug(f"Кількість до коригування: {self.orig_qty}")
+        step_size = self._obj_symbol.filters.get_step_size()
+        if step_size:
+            while self._base_amount < self.orig_qty:
                 self.orig_qty -= step_size
         logger.debug(f"Кількість після коригування: {self.orig_qty}")
 

@@ -74,14 +74,19 @@ class Account:
     def get_trading_balances(self, symbol):
         base_balance = next((b for b in self.balances if b.asset == symbol.base_asset), None)
         if base_balance is None:
-            sender.send_message("ValueError: Base balance is None")
-            raise ValueError("Base balance is None")
+            base_amount = 0
+        else:
+            base_amount = base_balance.free
         quote_balance = next((b for b in self.balances if b.asset == symbol.quote_asset), None)
         if quote_balance is None:
-            sender.send_message("ValueError: Quote balance is None")
-            raise ValueError("Quote balance is None")
-        base_amount = base_balance.free
-        quote_amount = quote_balance.free
+            quote_amount = 0
+        else:
+            quote_amount = quote_balance.free
+
+        if quote_amount == 0 and base_amount == 0:
+            sender.send_message("ValueError: All balances have a zero value")
+            raise ValueError("All balances have a zero value")
+
         return {
             "base_amount": base_amount,
             "quote_amount": quote_amount,

@@ -26,7 +26,7 @@ def add_percent(numeric_value, percent_value):
     return price_with_percent
 
 
-def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, qty, price, deposit_batch):
+def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, qty, price, deposit_batch, base_amount):
     logger.info(f"Attempt place order: {symbol.symbol}, {side}, price: {price}, qty: {qty}")
 
     new_order = Order(session_id=trading_session.session_id,
@@ -34,7 +34,8 @@ def attempt_make_deal(deposit_divider, account, trading_session, symbol, side, q
                       side=side.upper(),
                       qty=qty,
                       price=price,
-                      deposit_batch=deposit_batch
+                      deposit_batch=deposit_batch,
+                      base_amount=base_amount
                       )
     new_order.place_order()
 
@@ -84,10 +85,15 @@ def trading_cycle(ticker, deposit_divider, account,
             run_trading(force_new_session=True)
 
     # Тут все починається торгівля
-    logger.debug("tick")
-
     avg_price = trading_session.get_avg_price()
     percentage_difference = get_percentage_difference(trading_session.average_cost_acquired_assets, avg_price)
+
+    logger.debug(f"Tick, "
+                 f"stage: {trading_session.stage}, "
+                 f"avg cost: {trading_session.average_cost_acquired_assets}, "
+                 f"avg price: {avg_price}, "
+                 f"percentage difference: {round(percentage_difference, 2)}%")
+
     last_stage = trading_strategy.get_last_stage()
 
     if trading_session.stage > 0:
@@ -96,9 +102,28 @@ def trading_cycle(ticker, deposit_divider, account,
         що допускає продаж (більша на відповідний відсоток від середньої вартості)
         """
         if percentage_difference > trading_strategy.percentage_min_profit:
-            pass
+            if trading_strategy.market_conditions_sufficient_to_action("sell"):
+                price = trading_session.get_price_from_depth("sell", trading_session.finish_base_amount)
+                if price:
+                    logger.debug(f"Остаточна ціна продажу: {price}")
+                    # тут повторно перевіряємо чи влаштовує нас ціна продажу,
+                    # і якщо так, отримуємо кінцеву кількість для ордера
+                    percentage_difference = get_percentage_difference(trading_session.average_cost_acquired_assets,
+                                                                      price)
+                    logger.debug(f"Остаточна відсоткова різниця: {round(percentage_difference, 2)}%")
+                    if percentage_difference > trading_strategy.percentage_min_profit:
+                        qty = trading_session.finish_base_amount
+                        attempt_make_deal(deposit_divider=deposit_divider,
+                                          account=account,
+                                          trading_session=trading_session,
+                                          symbol=symbol,
+                                          side="sell",
+                                          qty=qty,
+                                          price=price,
+                                          deposit_batch=0,
+                                          base_amount=trading_session.finish_base_amount)
 
-    elif trading_session.stage < last_stage:
+    if trading_session.stage <= last_stage:
         """
         Якщо стейдж менше останнього то перевіримо чи середня ціна на ринку така,
         що допускає покупку (менша на відповідний відсоток від середньої вартості, або це нульовий стейдж)
@@ -111,25 +136,24 @@ def trading_cycle(ticker, deposit_divider, account,
                 pre_qty = deposit_batch / avg_price
                 price = trading_session.get_price_from_depth("buy", pre_qty)
                 if price:
-                    # тут повторно перевіряємо чи влаштовує нас ціна, і якщо так, отримуємо кінцеву кількість для ордеру
+                    logger.debug(f"Остаточна ціна купівлі: {price}")
+                    # тут повторно перевіряємо чи влаштовує нас ціна купівлі,
+                    # і якщо так, отримуємо кінцеву кількість для ордера
                     percentage_difference = get_percentage_difference(trading_session.average_cost_acquired_assets,
                                                                       price)
+                    logger.debug(f"Остаточна відсоткова різниця: {round(percentage_difference, 2)}%")
                     if (percentage_difference < stage_parameters.price_change
                             or trading_session.stage == 0):
                         qty = deposit_batch / avg_price
-                        logger.debug(price)
-                        attempt_make_deal(deposit_divider, account, trading_session, symbol,
-                                          "buy", qty, price, deposit_batch)
-
-                        a = 1
-
-    # qty = deposit_batch/avg_price
-    # price = trading_session.get_price_from_depth("buy", qty)
-    # if trading_session.average_cost_acquired_assets > 0:
-    #     if price < trading_session.average_cost_acquired_assets:
-    #         attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
-    # else:
-    #     attempt_make_deal(deposit_divider, account, trading_session, symbol, "buy", qty, price)
+                        attempt_make_deal(deposit_divider=deposit_divider,
+                                          account=account,
+                                          trading_session=trading_session,
+                                          symbol=symbol,
+                                          side="buy",
+                                          qty=qty,
+                                          price=price,
+                                          deposit_batch=deposit_batch,
+                                          base_amount=0)
 
     # ticker.stop()
 

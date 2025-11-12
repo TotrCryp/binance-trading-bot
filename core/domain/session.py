@@ -2,6 +2,7 @@ from core.sender import Sender
 from core.logger import get_logger
 from db.trading_session import save, update, get, get_last_id
 from api.binance.api_depth import BinanceDepthAPI
+from api.binance.api_book_ticker import BinanceBookTickerAPI
 from api.binance.api_avg_price import BinanceAvgPriceAPI
 
 sender = Sender()
@@ -53,6 +54,13 @@ class TradingSession:
         return float(avg_price_data["price"])
 
     def get_price_from_depth(self, side: str, quantity: float, ) -> float | None:
+        # Спочатку спробуємо отримати ціну меншою вагою через bookTicker
+        book_ticker = BinanceBookTickerAPI().get_book_ticker(self.symbol)
+        price = book_ticker["bidPrice"] if side == "sell" else book_ticker["askPrice"]
+        qty = book_ticker["bidQty"] if side == "sell" else book_ticker["askQty"]
+        if float(qty) > quantity:
+            return float(price)
+        # Якщо ні, то отримуємо книгу ордерів
         depth_data = BinanceDepthAPI().get_depth(self.symbol)
         # Якщо продаємо — беремо покупців (bids), починаючи з найвищої ціни.
         # Якщо купуємо — беремо продавців (asks), починаючи з найнижчої.

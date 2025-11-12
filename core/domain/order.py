@@ -87,22 +87,22 @@ class Order:
             self.save()
 
     def adjust_qty_according_deposit_batch(self):
-        logger.debug(f"Коригування відповідно до частки депозиту {self._deposit_batch}, ціна {self.price}")
-        logger.debug(f"Кількість до коригування: {self.orig_qty}")
+        logger.info(f"Коригування відповідно до частки депозиту {self._deposit_batch}, ціна {self.price}")
+        logger.info(f"Кількість до коригування: {self.orig_qty}")
         step_size = self._obj_symbol.filters.get_step_size()
         if step_size:
             while self._deposit_batch < self.price * self.orig_qty:
                 self.orig_qty -= step_size
-        logger.debug(f"Кількість після коригування: {self.orig_qty}")
+        logger.info(f"Кількість після коригування: {self.orig_qty}")
 
     def adjust_qty_according_base_amount(self):
-        logger.debug(f"Коригування відповідно до залишку базового активу {self._base_amount}")
-        logger.debug(f"Кількість до коригування: {self.orig_qty}")
+        logger.info(f"Коригування відповідно до залишку базового активу {self._base_amount}")
+        logger.info(f"Кількість до коригування: {self.orig_qty}")
         step_size = self._obj_symbol.filters.get_step_size()
         if step_size:
             while self._base_amount < self.orig_qty:
                 self.orig_qty -= step_size
-        logger.debug(f"Кількість після коригування: {self.orig_qty}")
+        logger.info(f"Кількість після коригування: {self.orig_qty}")
 
     def calculate_avg_fill_price(self) -> float:
         total_qty = sum(f.qty for f in self.fills)

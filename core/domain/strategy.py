@@ -5,6 +5,8 @@ from db.trading_strategy import save, get
 import json
 from typing import List
 from pydantic import BaseModel, ValidationError
+import pandas as pd
+from api.binance.api_klines import BinanceKlinesAPI
 
 
 logger = get_logger(__name__)
@@ -22,8 +24,8 @@ class TradingStrategySchema(BaseModel):
     updated_at: int
     deposit_division_strategy: List[DepositPartSchema]
     percentage_min_profit: float
-    market_indicator_to_buy: int
-    market_indicator_to_sell: int
+    market_indicator_to_buy: float
+    market_indicator_to_sell: float
     candle_multiplier: int
 
 
@@ -132,8 +134,8 @@ class TradingStrategy:
         return False
 
     def market_conditions_sufficient_to_action(self, action: str):
-        print("Check market conditions for ", action, self.market_indicator_to_buy, self.market_indicator_to_sell)
-        return True
+        # Перевірка ринкових показників виконується тут, якщо будуть ще умови, визначаємо їх саме тут
+        return self.condition_executed_volumes_appropriate(action)
 
     def get_stage_parameters(self, stage: int):
         for stage_data in self.deposit_division_strategy:
@@ -141,3 +143,32 @@ class TradingStrategy:
                 return stage_data
         sender.send_message(f"Parameters for stage {stage} not found")
         raise LookupError(f"Parameters for stage {stage} not found")
+
+    def condition_executed_volumes_appropriate(self, action: str):
+        volumes_ratio = self.get_executed_volumes_ratio()
+        target_str = f"< {self.market_indicator_to_buy}" if action == "buy" else f"> {self.market_indicator_to_sell}"
+        logger.info(f"Checking executed volumes ratio for {action.upper()}: current ratio {volumes_ratio}, "
+                    f"target ratio {target_str}")
+        if action == "buy" and self.market_indicator_to_buy > volumes_ratio:
+            return True
+        elif action == "sell" and self.market_indicator_to_sell < volumes_ratio:
+            return True
+        return False
+
+    def get_executed_volumes_ratio(self):
+        klines_data = BinanceKlinesAPI().get_klines(symbol=self.symbol, interval="1m", limit=60)
+
+        df = pd.DataFrame(klines_data, columns=[
+            "open_time", "open", "high", "low", "close", "volume",
+            "close_time", "quote_volume", "trades",
+            "taker_buy_base", "taker_buy_quote", "ignore"
+        ])
+
+        df["volume"] = df["volume"].astype(float)
+        df["taker_buy_base"] = df["taker_buy_base"].astype(float)
+        df["taker_sell_base"] = df["volume"] - df["taker_buy_base"]
+
+        total_buy = df["taker_buy_base"].sum()
+        total_sell = df["taker_sell_base"].sum()
+        ratio = round(total_buy / (total_buy + total_sell), 3)
+        return ratio

@@ -76,11 +76,11 @@ def trading_cycle(ticker, deposit_divider, account,
         return
 
     # Перевіряємо чи є оновлена стратегія. Якщо оновилась стратегія, то починаємо нову сесію
-    if trading_session.stage == 0:
-        if trading_strategy.update_strategy():
-            logger.info("Trading strategy has been updated. Stopping the current session to start new session")
-            ticker.stop()
-            run_trading(force_new_session=True)
+    # if trading_session.stage == 0:
+    #     if trading_strategy.update_strategy():
+    #         logger.info("Trading strategy has been updated. Stopping the current session to start new session")
+    #         ticker.stop()
+    #         run_trading(force_new_session=True)
 
     # Тут все починається торгівля
     avg_price = trading_session.get_avg_price()

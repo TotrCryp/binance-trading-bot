@@ -147,8 +147,8 @@ class TradingStrategy:
     def condition_executed_volumes_appropriate(self, action: str):
         volumes_ratio = self.get_executed_volumes_ratio()
         target_str = f"< {self.market_indicator_to_buy}" if action == "buy" else f"> {self.market_indicator_to_sell}"
-        logger.info(f"Checking executed volumes ratio for {action.upper()}: current ratio {volumes_ratio}, "
-                    f"target ratio {target_str}")
+        logger.debug(f"Checking executed volumes ratio for {action.upper()}: current ratio {volumes_ratio}, "
+                     f"target ratio {target_str}")
         if action == "buy" and self.market_indicator_to_buy > volumes_ratio:
             return True
         elif action == "sell" and self.market_indicator_to_sell < volumes_ratio:

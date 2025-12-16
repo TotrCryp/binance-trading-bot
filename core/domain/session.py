@@ -89,6 +89,13 @@ class TradingSession:
 
         return total_cost / total_acquired
 
+    @staticmethod
+    def near_zero(amount):
+        """need to redo this, and determine close to zero based on symbol filters"""
+        if amount < 0.00001:
+            return True
+        return False
+
     def recalc_average_cost(self, new_qty, new_avg_price) -> float:
         logger.info("Recalc:")
         logger.info(f"new_qty: {new_qty}, new_avg_price: {new_avg_price}")
@@ -96,7 +103,10 @@ class TradingSession:
         logger.info(f"new_total_value: {new_total_value}")
         logger.info(f"finish_base_amount: {self.finish_base_amount}, "
                     f"average_cost_acquired_assets: {self.average_cost_acquired_assets}")
-        old_total_value = self.finish_base_amount * self.average_cost_acquired_assets
+        if self.near_zero(self.finish_base_amount):
+            old_total_value = 0
+        else:
+            old_total_value = self.finish_base_amount * self.average_cost_acquired_assets
         logger.info(f"old_total_value: {old_total_value}")
         total_qty = self.finish_base_amount + new_qty
         logger.info(f"total_qty: {total_qty}")
